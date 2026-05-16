@@ -3,13 +3,17 @@
   "version": "1.0.0",
   "private": true,
   "scripts": {
-    "install-all": "npm install --prefix \"leela file/the-vibe-co/backend\" && npm install --prefix \"leela file/the-vibe-co/frontend\"",
-    "backend": "npm run dev --prefix \"leela file/the-vibe-co/backend\"",
-    "frontend": "npm run dev --prefix \"leela file/the-vibe-co/frontend\"",
-    "dev": "concurrently \"npm run backend\" \"npm run frontend\"",
+    "install:all": "npm install --prefix \"leela file/the-vibe-co/backend\" && npm install --prefix \"leela file/the-vibe-co/frontend\"",
+    "build:frontend": "npm run build --prefix \"leela file/the-vibe-co/frontend\"",
+    "build": "npm run install:all && npm run build:frontend",
+    "start": "NODE_ENV=production npm start --prefix \"leela file/the-vibe-co/backend\"",
+    "dev:backend": "npm run dev --prefix \"leela file/the-vibe-co/backend\"",
+    "dev:frontend": "npm run dev --prefix \"leela file/the-vibe-co/frontend\"",
+    "dev": "concurrently \"npm run dev:backend\" \"npm run dev:frontend\"",
     "seed": "npm run seed --prefix \"leela file/the-vibe-co/backend\""
   },
   "devDependencies": {
     "concurrently": "^8.2.2"
   }
 }
+

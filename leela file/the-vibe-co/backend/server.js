@@ -1,23 +1,32 @@
 require('dotenv').config();
+const path = require('path');
+const express = require('express');
+const cors = require('cors');
+const helmet = require('helmet');
+const compression = require('compression');
+const morgan = require('morgan');
+const connectDB = require('./config/db');
+
+// Default values if not in .env
 process.env.JWT_SECRET = process.env.JWT_SECRET || 'the_vibe_co_default_secret_key_2026_premium';
 process.env.PORT = process.env.PORT || 5002;
 
-const express = require('express');
-const cors = require('cors');
-const connectDB = require('./config/db');
-
-// Connect to database is handled below
-
 const app = express();
 
-// Middleware
+// Production Middleware
+app.use(helmet({
+  contentSecurityPolicy: false, // Set to false if using external resources like Google Fonts/CDNs
+}));
+app.use(compression());
 app.use(cors());
-app.use(require('morgan')('dev'));
+app.use(morgan(process.env.NODE_ENV === 'production' ? 'combined' : 'dev'));
 app.use(express.json());
 app.use(express.urlencoded({ extended: true }));
-app.use('/uploads', express.static(require('path').join(__dirname, 'uploads')));
 
-// Routes
+// Serve uploaded files
+app.use('/uploads', express.static(path.join(__dirname, 'uploads')));
+
+// API Routes
 app.use('/api/auth', require('./routes/authRoutes'));
 app.use('/api/events', require('./routes/eventRoutes'));
 app.use('/api/contact', require('./routes/contactRoutes'));
@@ -33,8 +42,18 @@ app.use('/api/chat', require('./routes/chatRoutes'));
 
 // Health check
 app.get('/api/health', (req, res) => {
-  res.json({ status: 'OK', message: 'THE VIBE CO. API is running' });
+  res.json({ status: 'OK', message: 'THE VIBE CO. API is running', env: process.env.NODE_ENV });
 });
+
+// SERVE FRONTEND IN PRODUCTION
+if (process.env.NODE_ENV === 'production') {
+  const frontendPath = path.join(__dirname, '../frontend/dist');
+  app.use(express.static(frontendPath));
+  
+  app.get('*', (req, res) => {
+    res.sendFile(path.join(frontendPath, 'index.html'));
+  });
+}
 
 // Error handling middleware
 app.use((err, req, res, next) => {
@@ -61,7 +80,8 @@ process.on('uncaughtException', (err) => {
 // Connect to database and start server
 connectDB().then(() => {
   const PORT = process.env.PORT || 5002;
-  const server = app.listen(PORT, () => {
-    console.log(`🎉 THE VIBE CO. Server running on port ${PORT}`);
+  app.listen(PORT, () => {
+    console.log(`🎉 THE VIBE CO. Server running on port ${PORT} [${process.env.NODE_ENV || 'development'}]`);
   });
 });
+
