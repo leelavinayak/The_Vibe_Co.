@@ -1,0 +1,15 @@
+{
+  "name": "the-vibe-co-workspace",
+  "version": "1.0.0",
+  "private": true,
+  "scripts": {
+    "install-all": "npm install --prefix \"leela file/the-vibe-co/backend\" && npm install --prefix \"leela file/the-vibe-co/frontend\"",
+    "backend": "npm run dev --prefix \"leela file/the-vibe-co/backend\"",
+    "frontend": "npm run dev --prefix \"leela file/the-vibe-co/frontend\"",
+    "dev": "concurrently \"npm run backend\" \"npm run frontend\"",
+    "seed": "npm run seed --prefix \"leela file/the-vibe-co/backend\""
+  },
+  "devDependencies": {
+    "concurrently": "^8.2.2"
+  }
+}

@@ -1,0 +1,17 @@
+node_modules/
+.env
+.DS_Store
+dist/
+build/
+*.log
+
+# Database files
+leela file/the-vibe-co/backend/data/
+leela file/the-vibe-co/backend/diagnostic.data/
+leela file/the-vibe-co/backend/journal/
+*.wt
+mongod.lock
+WiredTiger*
+
+# Uploads (optional, but usually good to ignore if they are user-generated)
+# leela file/the-vibe-co/backend/uploads/

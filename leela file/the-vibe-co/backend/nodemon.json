@@ -1,0 +1,9 @@
+{
+  "ignore": [
+    "data/*",
+    "debug_auth.log",
+    "*.log",
+    "node_modules/*"
+  ],
+  "ext": "js,mjs,cjs,json"
+}
