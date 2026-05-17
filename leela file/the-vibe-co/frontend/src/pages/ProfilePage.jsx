@@ -23,10 +23,14 @@ const ProfilePage = () => {
   });
   const [updateLoading, setUpdateLoading] = useState(false);
   const [isUploading, setIsUploading] = useState(false);
+  const [isMobile, setIsMobile] = useState(window.innerWidth < 768);
   const navigate = useNavigate();
 
   useEffect(() => {
     fetchProfile();
+    const handleResize = () => setIsMobile(window.innerWidth < 768);
+    window.addEventListener('resize', handleResize);
+    return () => window.removeEventListener('resize', handleResize);
   }, []);
 
   const fetchProfile = async () => {
@@ -117,8 +121,8 @@ const ProfilePage = () => {
 
         <AnimatePresence mode="wait">
           {isEditing ? (
-            <motion.div initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }} exit={{ opacity: 0, y: -10 }} style={{ background: 'rgba(255,255,255,0.02)', padding: '40px', borderRadius: '32px', border: '1px solid rgba(255,255,255,0.05)' }}>
-              <form onSubmit={handleUpdate} style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '30px' }}>
+            <motion.div initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }} exit={{ opacity: 0, y: -10 }} style={{ background: 'rgba(255,255,255,0.02)', padding: isMobile ? '25px 20px' : '40px', borderRadius: isMobile ? '24px' : '32px', border: '1px solid rgba(255,255,255,0.05)' }}>
+              <form onSubmit={handleUpdate} className="profile-grid">
                 <div className="form-group"><label>Full Name</label><input className="form-input" value={editForm.name} onChange={e => setEditForm({...editForm, name: e.target.value})} /></div>
                 <div className="form-group"><label>Email Address</label><input className="form-input" value={editForm.email} disabled style={{ opacity: 0.5 }} /></div>
                 <div className="form-group"><label>Phone Number</label><input className="form-input" value={editForm.phone} onChange={e => setEditForm({...editForm, phone: e.target.value})} /></div>
@@ -128,7 +132,7 @@ const ProfilePage = () => {
                 {profileData?.user.role === 'provider' && (
                   <div style={{ gridColumn: '1 / -1', marginTop: '20px', borderTop: '1px solid rgba(255,255,255,0.05)', paddingTop: '40px' }}>
                     <h3 style={{ color: '#C9A84C', marginBottom: '30px' }}>Service Information</h3>
-                    <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '30px' }}>
+                    <div className="profile-grid">
                       <div className="form-group"><label>Business Name</label><input className="form-input" value={editForm.serviceName} onChange={e => setEditForm({...editForm, serviceName: e.target.value})} /></div>
                       <div className="form-group"><label>Service Type</label>
                         <select className="form-input" value={editForm.serviceType} onChange={e => setEditForm({...editForm, serviceType: e.target.value})}>
@@ -140,6 +144,24 @@ const ProfilePage = () => {
                           <option value="security">Security</option>
                           <option value="total_event_organisation">Total Event Organisation</option>
                         </select>
+                      </div>
+                      <div className="form-group">
+                        <label>Starting Price (₹)</label>
+                        <input 
+                          className="form-input" 
+                          placeholder="e.g. 15000 or On Request" 
+                          value={editForm.priceStartsFrom} 
+                          onChange={e => setEditForm({...editForm, priceStartsFrom: e.target.value})} 
+                        />
+                      </div>
+                      <div className="form-group">
+                        <label>Instagram Username</label>
+                        <input 
+                          className="form-input" 
+                          placeholder="e.g. vibe_co" 
+                          value={editForm.instagram} 
+                          onChange={e => setEditForm({...editForm, instagram: e.target.value})} 
+                        />
                       </div>
                       <div className="form-group" style={{ gridColumn: '1 / -1' }}><label>About Service</label><textarea className="form-input" style={{ minHeight: '120px' }} value={editForm.description} onChange={e => setEditForm({...editForm, description: e.target.value})} /></div>
                       
@@ -271,9 +293,12 @@ const ProfilePage = () => {
       </div>
 
       <style>{`
+        .profile-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 30px; }
         .form-input { width: 100%; padding: 15px; background: rgba(255,255,255,0.03); border: 1px solid rgba(255,255,255,0.1); border-radius: 12px; color: #fff; font-size: 1rem; }
         .form-group label { display: block; color: #555; font-size: 0.7rem; text-transform: uppercase; letter-spacing: 2px; margin-bottom: 10px; fontWeight: 800; }
-        @media (max-width: 768px) { form { grid-template-columns: 1fr !important; } }
+        @media (max-width: 768px) {
+          .profile-grid { grid-template-columns: 1fr !important; gap: 20px !important; }
+        }
       `}</style>
     </div>
   );

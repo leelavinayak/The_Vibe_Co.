@@ -42,6 +42,7 @@ const ProviderDashboard = () => {
   // Mobile specific state
   const [isMobile, setIsMobile] = useState(window.innerWidth < 992);
   const [showChatList, setShowChatList] = useState(true);
+  const [showMobileDossier, setShowMobileDossier] = useState(false);
   const [searchTerm, setSearchTerm] = useState('');
 
   useEffect(() => {
@@ -546,6 +547,27 @@ const ProviderDashboard = () => {
                             <div style={{ fontSize: '0.65rem', color: '#81C784' }}>Active</div>
                           </div>
                         </div>
+                        {isMobile && (
+                          <button
+                            type="button"
+                            onClick={() => setShowMobileDossier(true)}
+                            style={{
+                              background: 'rgba(201,168,76,0.1)',
+                              border: '1px solid rgba(201,168,76,0.3)',
+                              color: '#C9A84C',
+                              padding: '8px 14px',
+                              borderRadius: '10px',
+                              fontSize: '0.75rem',
+                              fontWeight: 700,
+                              display: 'flex',
+                              alignItems: 'center',
+                              gap: '6px',
+                              cursor: 'pointer'
+                            }}
+                          >
+                            <HiUserCircle size={16} /> Info
+                          </button>
+                        )}
                       </div>
 
                       <div style={{ flex: 1, padding: '20px', overflowY: 'auto', display: 'flex', flexDirection: 'column', gap: '12px' }}>
@@ -850,21 +872,28 @@ const ProviderDashboard = () => {
                               </div>
                             </div>
 
-                            <div style={{ display: 'flex', gap: '12px', flexWrap: 'wrap', position: 'relative', zIndex: 1 }}>
-                              {inq.status === 'new' && (
-                                <>
-                                  <button onClick={(e) => { e.stopPropagation(); handleUpdateStatus(inq._id, 'accepted'); }} style={{ flex: 1, background: '#81C784', color: '#000', border: 'none', padding: '12px', borderRadius: '14px', fontWeight: 800, cursor: 'pointer', fontSize: '0.85rem', boxShadow: '0 4px 12px rgba(129, 199, 132, 0.2)' }}>Accept</button>
-                                  <button onClick={(e) => { e.stopPropagation(); setSelectedInq(inq); setShowRejectModal(true); }} style={{ flex: 1, background: 'rgba(239, 83, 80, 0.1)', color: '#EF5350', border: '1px solid #EF535030', padding: '12px', borderRadius: '14px', fontWeight: 800, cursor: 'pointer', fontSize: '0.85rem' }}>Reject</button>
-                                </>
+                            <div style={{ display: 'flex', flexDirection: 'column', gap: '10px', position: 'relative', zIndex: 1, width: '100%' }}>
+                              {/* State-changing Action Row */}
+                              {(inq.status === 'new' || inq.status === 'accepted') && (
+                                <div style={{ display: 'flex', gap: '10px', width: '100%' }}>
+                                  {inq.status === 'new' && (
+                                    <>
+                                      <button onClick={(e) => { e.stopPropagation(); handleUpdateStatus(inq._id, 'accepted'); }} style={{ flex: 1, background: '#81C784', color: '#000', border: 'none', padding: '12px 16px', borderRadius: '14px', fontWeight: 800, cursor: 'pointer', fontSize: '0.85rem', boxShadow: '0 4px 12px rgba(129, 199, 132, 0.2)', transition: '0.2s' }}>Accept</button>
+                                      <button onClick={(e) => { e.stopPropagation(); setSelectedInq(inq); setShowRejectModal(true); }} style={{ flex: 1, background: 'rgba(239, 83, 80, 0.1)', color: '#EF5350', border: '1px solid #EF535030', padding: '12px 16px', borderRadius: '14px', fontWeight: 800, cursor: 'pointer', fontSize: '0.85rem', transition: '0.2s' }}>Reject</button>
+                                    </>
+                                  )}
+                                  {inq.status === 'accepted' && (
+                                    <button onClick={(e) => { e.stopPropagation(); handleUpdateStatus(inq._id, 'completed'); }} style={{ flex: 1, background: 'linear-gradient(45deg, #4FC3F7, #29B6F6)', color: '#000', border: 'none', padding: '12px 16px', borderRadius: '14px', fontWeight: 800, cursor: 'pointer', fontSize: '0.85rem', display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '6px', boxShadow: '0 4px 15px rgba(79, 195, 247, 0.3)', transition: '0.2s' }}><HiCheckCircle size={18} /> Complete Job</button>
+                                  )}
+                                </div>
                               )}
-                              {inq.status === 'accepted' && (
-                                <button onClick={(e) => { e.stopPropagation(); handleUpdateStatus(inq._id, 'completed'); }} style={{ flex: 2, background: 'linear-gradient(45deg, #4FC3F7, #29B6F6)', color: '#000', border: 'none', padding: '12px', borderRadius: '14px', fontWeight: 800, cursor: 'pointer', fontSize: '0.85rem', display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '6px', boxShadow: '0 4px 15px rgba(79, 195, 247, 0.3)' }}><HiCheckCircle size={18} /> Complete Job</button>
-                              )}
-                              {(inq.status === 'accepted' || inq.status === 'new') && (
-                                <button onClick={(e) => { e.stopPropagation(); setActiveChat(inq); setActiveTab('chat'); }} style={{ flex: 1, background: 'rgba(201,168,76,0.1)', color: '#C9A84C', border: '1px solid rgba(201,168,76,0.3)', padding: '12px', borderRadius: '14px', fontWeight: 800, cursor: 'pointer', fontSize: '0.85rem', display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '6px' }}><HiChatAlt2 size={18} /> Chat</button>
-                              )}
-                              <div style={{ display: 'flex', gap: '8px' }}>
-                                <button onClick={(e) => { e.stopPropagation(); setSelectedInq(inq); setShowViewModal(true); }} style={{ width: '48px', height: '48px', background: 'rgba(255,255,255,0.05)', color: '#fff', border: '1px solid rgba(255,255,255,0.1)', borderRadius: '14px', display: 'flex', alignItems: 'center', justifyContent: 'center', cursor: 'pointer' }}><HiEye size={20} /></button>
+                              
+                              {/* Communication & Management Action Row */}
+                              <div style={{ display: 'flex', gap: '10px', width: '100%', alignItems: 'center' }}>
+                                {(inq.status === 'accepted' || inq.status === 'new') && (
+                                  <button onClick={(e) => { e.stopPropagation(); setActiveChat(inq); setActiveTab('chat'); }} style={{ flex: 1, background: 'rgba(201,168,76,0.1)', color: '#C9A84C', border: '1px solid rgba(201,168,76,0.3)', padding: '12px 16px', borderRadius: '14px', fontWeight: 800, cursor: 'pointer', fontSize: '0.85rem', display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '6px', transition: '0.2s' }}><HiChatAlt2 size={18} /> Chat</button>
+                                )}
+                                <button onClick={(e) => { e.stopPropagation(); setSelectedInq(inq); setShowViewModal(true); }} style={{ width: '48px', height: '45px', background: 'rgba(255,255,255,0.05)', color: '#fff', border: '1px solid rgba(255,255,255,0.1)', borderRadius: '14px', display: 'flex', alignItems: 'center', justifyContent: 'center', cursor: 'pointer', transition: '0.2s' }}><HiEye size={20} /></button>
                                 <button onClick={(e) => {
                                   e.stopPropagation();
                                   setSelectedInq(inq);
@@ -875,7 +904,7 @@ const ProviderDashboard = () => {
                                     billing: inq.billing || { items: [], totalAmount: 0, amountPaid: 0 }
                                   });
                                   setShowEditModal(true);
-                                }} style={{ width: '48px', height: '48px', background: 'rgba(201,168,76,0.05)', color: '#C9A84C', border: '1px solid rgba(201,168,76,0.1)', borderRadius: '14px', display: 'flex', alignItems: 'center', justifyContent: 'center', cursor: 'pointer' }}><HiPencil size={20} /></button>
+                                }} style={{ width: '48px', height: '45px', background: 'rgba(201,168,76,0.05)', color: '#C9A84C', border: '1px solid rgba(201,168,76,0.1)', borderRadius: '14px', display: 'flex', alignItems: 'center', justifyContent: 'center', cursor: 'pointer', transition: '0.2s' }}><HiPencil size={20} /></button>
                               </div>
                             </div>
                           </motion.div>
@@ -1140,137 +1169,319 @@ const ProviderDashboard = () => {
 
       {showEditModal && selectedInq && (
         <div style={{ position: 'fixed', inset: 0, background: 'rgba(0,0,0,0.8)', backdropFilter: 'blur(10px)', zIndex: 1000, display: 'flex', alignItems: 'center', justifyContent: 'center', padding: '20px' }}>
-          <form onSubmit={handleUpdateDetails} style={{ background: '#111', border: '1px solid rgba(201,168,76,0.2)', borderRadius: '32px', padding: '40px', maxWidth: '500px', width: '100%' }}>
-            <h3 style={{ fontSize: '1.8rem', marginBottom: '30px' }}>Edit <span className="text-gradient">Inquiry</span></h3>
+          <form onSubmit={handleUpdateDetails} style={{ background: '#111', border: '1px solid rgba(201,168,76,0.2)', borderRadius: isMobile ? '24px' : '32px', padding: isMobile ? '25px 20px' : '40px', maxWidth: isMobile ? '500px' : '900px', width: '100%', maxHeight: '90vh', overflowY: 'auto' }}>
+            <h3 style={{ fontSize: isMobile ? '1.5rem' : '1.8rem', marginBottom: '20px', fontFamily: "'Playfair Display', serif" }}>Edit <span className="text-gradient">Inquiry & Pricing</span></h3>
 
-            <div style={{ display: 'flex', flexDirection: 'column', gap: '20px' }}>
-              <div>
-                <label style={{ display: 'block', fontSize: '0.7rem', color: '#555577', textTransform: 'uppercase', marginBottom: '8px' }}>Event Date</label>
-                <input
-                  type="date"
-                  value={editForm.eventDate}
-                  onChange={(e) => setEditForm({ ...editForm, eventDate: e.target.value })}
-                  style={{ width: '100%', background: 'rgba(255,255,255,0.05)', border: '1px solid rgba(255,255,255,0.1)', borderRadius: '12px', padding: '12px', color: '#fff', outline: 'none' }}
-                />
-              </div>
-
-              <div>
-                <label style={{ display: 'block', fontSize: '0.7rem', color: '#555577', textTransform: 'uppercase', marginBottom: '8px' }}>Budget</label>
-                <input
-                  type="text"
-                  placeholder="e.g. ₹50,000"
-                  value={editForm.budget}
-                  onChange={(e) => {
-                    const cleanVal = e.target.value.replace(/[^0-9]/g, '');
-                    const numVal = cleanVal ? Number(cleanVal) : 0;
-                    setEditForm({
-                      ...editForm,
-                      budget: e.target.value,
-                      billing: {
-                        ...(editForm.billing || { items: [], totalAmount: 0, amountPaid: 0 }),
-                        totalAmount: numVal
-                      }
-                    });
-                  }}
-                  style={{ width: '100%', background: 'rgba(255,255,255,0.05)', border: '1px solid rgba(255,255,255,0.1)', borderRadius: '12px', padding: '12px', color: '#fff', outline: 'none' }}
-                />
-              </div>
-
-              <div>
-                <label style={{ display: 'block', fontSize: '0.7rem', color: '#555577', textTransform: 'uppercase', marginBottom: '8px' }}>Client Message</label>
-                <textarea
-                  value={editForm.message}
-                  onChange={(e) => setEditForm({ ...editForm, message: e.target.value })}
-                  style={{ width: '100%', height: '100px', background: 'rgba(255,255,255,0.05)', border: '1px solid rgba(255,255,255,0.1)', borderRadius: '12px', padding: '12px', color: '#fff', outline: 'none', resize: 'none' }}
-                />
-              </div>
-            </div>
-
-            <div>
-              <label style={{ display: 'block', fontSize: '0.7rem', color: '#555577', textTransform: 'uppercase', marginBottom: '15px', borderBottom: '1px solid rgba(255,255,255,0.05)', paddingBottom: '10px' }}>Billing & Services</label>
-              <div style={{ display: 'flex', flexDirection: 'column', gap: '10px', marginBottom: '15px' }}>
-                {(editForm.billing?.items || []).map((item, idx) => (
-                  <div key={idx} style={{ display: 'flex', gap: '10px' }}>
-                    <input
-                      type="text"
-                      placeholder="Service name..."
-                      value={item.description}
-                      onChange={(e) => {
-                        const newItems = editForm.billing.items.map((it, i) =>
-                          i === idx ? { ...it, description: e.target.value } : it
-                        );
-                        setEditForm({ ...editForm, billing: { ...editForm.billing, items: newItems } });
-                      }}
-                      style={{ flex: 2, background: 'rgba(255,255,255,0.03)', border: '1px solid rgba(255,255,255,0.1)', borderRadius: '8px', padding: '8px 12px', color: '#fff', fontSize: '0.85rem' }}
-                    />
-                    <input
-                      type="number"
-                      placeholder="Amount"
-                      value={item.amount || ''}
-                      onChange={(e) => {
-                        const val = e.target.value === '' ? 0 : Number(e.target.value);
-                        const newItems = editForm.billing.items.map((it, i) =>
-                          i === idx ? { ...it, amount: val } : it
-                        );
-                        const total = newItems.reduce((acc, curr) => acc + (curr.amount || 0), 0);
-                        setEditForm({
-                          ...editForm,
-                          budget: `₹${total}`,
-                          billing: { ...editForm.billing, items: newItems, totalAmount: total }
-                        });
-                      }}
-                      style={{ flex: 1, background: 'rgba(255,255,255,0.03)', border: '1px solid rgba(255,255,255,0.1)', borderRadius: '8px', padding: '8px 12px', color: '#fff', fontSize: '0.85rem' }}
-                    />
-                    <button
-                      type="button"
-                      onClick={() => {
-                        const newItems = editForm.billing.items.filter((_, i) => i !== idx);
-                        const total = newItems.reduce((acc, curr) => acc + (curr.amount || 0), 0);
-                        setEditForm({
-                          ...editForm,
-                          budget: `₹${total}`,
-                          billing: { ...editForm.billing, items: newItems, totalAmount: total }
-                        });
-                      }}
-                      style={{ background: 'rgba(239, 83, 80, 0.1)', color: '#EF5350', border: 'none', borderRadius: '8px', width: '35px', cursor: 'pointer' }}
-                    >x</button>
-                  </div>
-                ))}
-                <button
-                  type="button"
-                  onClick={() => {
-                    const newItems = [...(editForm.billing?.items || []), { description: '', amount: 0 }];
-                    setEditForm({ ...editForm, billing: { ...editForm.billing, items: newItems } });
-                  }}
-                  style={{ background: 'rgba(201,168,76,0.1)', color: '#C9A84C', border: '1px dashed rgba(201,168,76,0.3)', padding: '10px', borderRadius: '12px', cursor: 'pointer', fontSize: '0.8rem', fontWeight: 700 }}
-                >+ Add Service Item</button>
-              </div>
-
-              <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '15px' }}>
+            <div style={{ display: 'flex', flexDirection: isMobile ? 'column' : 'row', gap: '35px', alignItems: 'stretch', marginBottom: '25px' }}>
+              {/* Left Column: Event & Inquiry Info */}
+              <div style={{ flex: '1', display: 'flex', flexDirection: 'column', gap: '20px' }}>
+                <h4 style={{ color: '#C9A84C', fontSize: '0.8rem', textTransform: 'uppercase', letterSpacing: '1.5px', borderBottom: '1px solid rgba(255,255,255,0.05)', paddingBottom: '10px', margin: 0, fontWeight: 700 }}>Inquiry Details</h4>
                 <div>
-                  <label style={{ display: 'block', fontSize: '0.65rem', color: '#555577', marginBottom: '5px' }}>Total Amount</label>
-                  <div style={{ background: 'rgba(255,255,255,0.05)', padding: '10px', borderRadius: '10px', color: '#fff', fontWeight: 800 }}>₹{editForm.billing?.totalAmount || 0}</div>
-                </div>
-                <div>
-                  <label style={{ display: 'block', fontSize: '0.65rem', color: '#555577', marginBottom: '5px' }}>Amount Paid</label>
+                  <label style={{ display: 'block', fontSize: '0.7rem', color: '#555577', textTransform: 'uppercase', marginBottom: '8px', fontWeight: 700 }}>Event Date</label>
                   <input
-                    type="number"
-                    value={editForm.billing?.amountPaid || ''}
+                    type="date"
+                    value={editForm.eventDate}
+                    onChange={(e) => setEditForm({ ...editForm, eventDate: e.target.value })}
+                    style={{ width: '100%', background: 'rgba(255,255,255,0.05)', border: '1px solid rgba(255,255,255,0.1)', borderRadius: '12px', padding: '12px', color: '#fff', outline: 'none' }}
+                  />
+                </div>
+
+                <div>
+                  <label style={{ display: 'block', fontSize: '0.7rem', color: '#555577', textTransform: 'uppercase', marginBottom: '8px', fontWeight: 700 }}>Client Budget</label>
+                  <input
+                    type="text"
+                    placeholder="e.g. ₹50,000"
+                    value={editForm.budget}
                     onChange={(e) => {
-                      const val = e.target.value === '' ? 0 : Number(e.target.value);
-                      setEditForm({ ...editForm, billing: { ...editForm.billing, amountPaid: val } });
+                      const cleanVal = e.target.value.replace(/[^0-9]/g, '');
+                      const numVal = cleanVal ? Number(cleanVal) : 0;
+                      setEditForm({
+                        ...editForm,
+                        budget: e.target.value,
+                        billing: {
+                          ...(editForm.billing || { items: [], totalAmount: 0, amountPaid: 0 }),
+                          totalAmount: numVal
+                        }
+                      });
                     }}
-                    style={{ width: '100%', background: 'rgba(255,255,255,0.03)', border: '1px solid rgba(255,255,255,0.1)', borderRadius: '10px', padding: '10px', color: '#fff', outline: 'none' }}
+                    style={{ width: '100%', background: 'rgba(255,255,255,0.05)', border: '1px solid rgba(255,255,255,0.1)', borderRadius: '12px', padding: '12px', color: '#fff', outline: 'none' }}
+                  />
+                </div>
+
+                <div>
+                  <label style={{ display: 'block', fontSize: '0.7rem', color: '#555577', textTransform: 'uppercase', marginBottom: '8px', fontWeight: 700 }}>Client Message</label>
+                  <textarea
+                    value={editForm.message}
+                    onChange={(e) => setEditForm({ ...editForm, message: e.target.value })}
+                    style={{ width: '100%', height: isMobile ? '100px' : '150px', background: 'rgba(255,255,255,0.05)', border: '1px solid rgba(255,255,255,0.1)', borderRadius: '12px', padding: '12px', color: '#fff', outline: 'none', resize: 'none' }}
                   />
                 </div>
               </div>
+
+              {/* Vertical divider line for laptop screens */}
+              {!isMobile && (
+                <div style={{ width: '1px', background: 'rgba(255,255,255,0.08)', margin: '10px 0' }} />
+              )}
+
+              {/* Right Column: Billing Items & Payment Details */}
+              <div style={{ flex: '1.3', display: 'flex', flexDirection: 'column', gap: '20px' }}>
+                <h4 style={{ color: '#C9A84C', fontSize: '0.8rem', textTransform: 'uppercase', letterSpacing: '1.5px', borderBottom: '1px solid rgba(255,255,255,0.05)', paddingBottom: '10px', margin: 0, fontWeight: 700 }}>Billing & Services</h4>
+                <div style={{ display: 'flex', flexDirection: 'column', gap: '12px', maxHeight: isMobile ? 'none' : '230px', overflowY: isMobile ? 'visible' : 'auto', paddingRight: isMobile ? '0' : '5px' }}>
+                  {(editForm.billing?.items || []).map((item, idx) => (
+                    <div key={idx} style={{
+                      display: 'flex',
+                      flexDirection: isMobile ? 'column' : 'row',
+                      gap: '10px',
+                      background: 'rgba(255,255,255,0.02)',
+                      padding: '12px',
+                      borderRadius: '12px',
+                      border: '1px solid rgba(255,255,255,0.05)'
+                    }}>
+                      <input
+                        type="text"
+                        placeholder="Service name..."
+                        value={item.description}
+                        onChange={(e) => {
+                          const newItems = editForm.billing.items.map((it, i) =>
+                            i === idx ? { ...it, description: e.target.value } : it
+                          );
+                          setEditForm({ ...editForm, billing: { ...editForm.billing, items: newItems } });
+                        }}
+                        style={{ flex: 1.8, background: 'rgba(255,255,255,0.03)', border: '1px solid rgba(255,255,255,0.1)', borderRadius: '8px', padding: '10px 12px', color: '#fff', fontSize: '0.85rem' }}
+                      />
+                      <div style={{ display: 'flex', gap: '10px', flex: 1.2 }}>
+                        <div style={{ position: 'relative', flex: 1 }}>
+                          <span style={{ position: 'absolute', left: '10px', top: '50%', transform: 'translateY(-50%)', color: '#C9A84C', fontSize: '0.85rem' }}>₹</span>
+                          <input
+                            type="number"
+                            placeholder="Amount"
+                            value={item.amount || ''}
+                            onChange={(e) => {
+                              const val = e.target.value === '' ? 0 : Number(e.target.value);
+                              const newItems = editForm.billing.items.map((it, i) =>
+                                i === idx ? { ...it, amount: val } : it
+                              );
+                              const total = newItems.reduce((acc, curr) => acc + (curr.amount || 0), 0);
+                              setEditForm({
+                                ...editForm,
+                                budget: `₹${total}`,
+                                billing: { ...editForm.billing, items: newItems, totalAmount: total }
+                              });
+                            }}
+                            style={{ width: '100%', background: 'rgba(255,255,255,0.03)', border: '1px solid rgba(255,255,255,0.1)', borderRadius: '8px', padding: '10px 10px 10px 20px', color: '#fff', fontSize: '0.85rem' }}
+                          />
+                        </div>
+                        <button
+                          type="button"
+                          onClick={() => {
+                            const newItems = editForm.billing.items.filter((_, i) => i !== idx);
+                            const total = newItems.reduce((acc, curr) => acc + (curr.amount || 0), 0);
+                            setEditForm({
+                              ...editForm,
+                              budget: `₹${total}`,
+                              billing: { ...editForm.billing, items: newItems, totalAmount: total }
+                            });
+                          }}
+                          style={{ background: 'rgba(239, 83, 80, 0.1)', color: '#EF5350', border: 'none', borderRadius: '8px', width: '38px', height: '38px', display: 'flex', alignItems: 'center', justifyContent: 'center', cursor: 'pointer', transition: '0.2s' }}
+                        >✕</button>
+                      </div>
+                    </div>
+                  ))}
+                  <button
+                    type="button"
+                    onClick={() => {
+                      const newItems = [...(editForm.billing?.items || []), { description: '', amount: 0 }];
+                      setEditForm({ ...editForm, billing: { ...editForm.billing, items: newItems } });
+                    }}
+                    style={{ background: 'rgba(201,168,76,0.1)', color: '#C9A84C', border: '1px dashed rgba(201,168,76,0.3)', padding: '12px', borderRadius: '12px', cursor: 'pointer', fontSize: '0.8rem', fontWeight: 700, width: '100%', transition: '0.2s' }}
+                  >+ Add Service Item</button>
+                </div>
+
+                <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '15px', marginTop: 'auto', borderTop: '1px solid rgba(255,255,255,0.05)', paddingTop: '15px' }}>
+                  <div>
+                    <label style={{ display: 'block', fontSize: '0.65rem', color: '#555577', marginBottom: '5px', fontWeight: 700 }}>Total Amount</label>
+                    <div style={{ background: 'rgba(255,255,255,0.05)', padding: '12px', borderRadius: '10px', color: '#fff', fontWeight: 800 }}>₹{editForm.billing?.totalAmount || 0}</div>
+                  </div>
+                  <div>
+                    <label style={{ display: 'block', fontSize: '0.65rem', color: '#555577', marginBottom: '5px', fontWeight: 700 }}>Amount Paid</label>
+                    <input
+                      type="number"
+                      value={editForm.billing?.amountPaid || ''}
+                      onChange={(e) => {
+                        const val = e.target.value === '' ? 0 : Number(e.target.value);
+                        setEditForm({ ...editForm, billing: { ...editForm.billing, amountPaid: val } });
+                      }}
+                      style={{ width: '100%', background: 'rgba(255,255,255,0.03)', border: '1px solid rgba(255,255,255,0.1)', borderRadius: '10px', padding: '11px 12px', color: '#fff', outline: 'none' }}
+                    />
+                  </div>
+                </div>
+              </div>
             </div>
 
-            <div style={{ display: 'flex', gap: '15px', marginTop: '30px' }}>
-              <button type="submit" style={{ flex: 1, background: '#C9A84C', color: '#000', border: 'none', padding: '12px', borderRadius: '12px', fontWeight: 700, cursor: 'pointer' }}>Save Changes</button>
-              <button type="button" onClick={() => setShowEditModal(false)} style={{ flex: 1, background: 'rgba(255,255,255,0.05)', color: '#fff', border: 'none', padding: '12px', borderRadius: '12px', fontWeight: 700, cursor: 'pointer' }}>Cancel</button>
+            <div style={{ display: 'flex', gap: '15px', marginTop: '10px', borderTop: '1px solid rgba(255,255,255,0.05)', paddingTop: '20px' }}>
+              <button type="submit" style={{ flex: 1, background: '#C9A84C', color: '#000', border: 'none', padding: '14px', borderRadius: '12px', fontWeight: 700, cursor: 'pointer', transition: '0.2s' }}>Save Changes</button>
+              <button type="button" onClick={() => setShowEditModal(false)} style={{ flex: 1, background: 'rgba(255,255,255,0.05)', color: '#fff', border: 'none', padding: '14px', borderRadius: '12px', fontWeight: 700, cursor: 'pointer', transition: '0.2s' }}>Cancel</button>
             </div>
           </form>
+        </div>
+      )}
+
+      {showMobileDossier && activeChat && isMobile && (
+        <div style={{ position: 'fixed', inset: 0, background: 'rgba(0,0,0,0.8)', backdropFilter: 'blur(10px)', zIndex: 1000, display: 'flex', alignItems: 'center', justifyContent: 'center', padding: '20px' }}>
+          <div style={{ background: '#111', border: '1px solid rgba(201,168,76,0.2)', borderRadius: '24px', padding: '25px', maxWidth: '500px', width: '100%', maxHeight: '90vh', overflowY: 'auto', display: 'flex', flexDirection: 'column', gap: '20px' }}>
+            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', borderBottom: '1px solid rgba(255,255,255,0.05)', paddingBottom: '15px' }}>
+              <h4 style={{ color: '#C9A84C', fontSize: '0.85rem', textTransform: 'uppercase', letterSpacing: '2px', margin: 0, fontWeight: 700 }}>Client Dossier</h4>
+              <button onClick={() => setShowMobileDossier(false)} style={{ background: 'rgba(255,255,255,0.05)', border: 'none', color: '#fff', width: '35px', height: '35px', borderRadius: '10px', display: 'flex', alignItems: 'center', justifyContent: 'center', fontWeight: 'bold', cursor: 'pointer' }}>✕</button>
+            </div>
+            
+            <div style={{ display: 'flex', flexDirection: 'column', gap: '15px' }}>
+              <DetailBlock label="Event Type" value={activeChat.eventType?.split('_').join(' ')} icon={<HiStar />} />
+              <DetailBlock label="Email" value={activeChat.email} icon={<HiMail />} />
+              <DetailBlock label="Phone" value={activeChat.phone || activeChat.user?.phone || 'N/A'} icon={<HiPhone />} />
+              <DetailBlock label="Date" value={activeChat.eventDate ? new Date(activeChat.eventDate).toLocaleDateString() : 'TBD'} icon={<HiCalendar />} />
+              <DetailBlock label="Total Cost" value={activeChat.billing?.totalAmount ? `₹${activeChat.billing.totalAmount}` : activeChat.budget} icon={<HiBadgeCheck />} />
+
+              {activeChat.user && (
+                <div style={{
+                  marginTop: '10px',
+                  padding: '15px',
+                  background: 'rgba(255, 255, 255, 0.02)',
+                  borderRadius: '16px',
+                  border: '1px solid rgba(255, 255, 255, 0.05)'
+                }}>
+                  <div style={{
+                    color: '#C9A84C',
+                    fontSize: '0.65rem',
+                    textTransform: 'uppercase',
+                    letterSpacing: '1px',
+                    fontWeight: 700,
+                    marginBottom: '10px',
+                    borderBottom: '1px solid rgba(255, 255, 255, 0.05)',
+                    paddingBottom: '5px'
+                  }}>
+                    Registered Profile
+                  </div>
+                  <div style={{ display: 'flex', flexDirection: 'column', gap: '10px' }}>
+                    <DetailBlock label="Registered Name" value={activeChat.user.name} icon={<HiUserCircle />} />
+                    <DetailBlock label="Registered Email" value={activeChat.user.email} icon={<HiMail />} />
+                    {activeChat.user.phone && <DetailBlock label="Registered Phone" value={activeChat.user.phone} icon={<HiPhone />} />}
+                    {activeChat.user.gender && <DetailBlock label="Gender" value={activeChat.user.gender?.toUpperCase()} icon={<HiUserCircle />} />}
+                    {(activeChat.user.state || activeChat.user.city) && (
+                      <DetailBlock
+                        label="Location"
+                        value={`${activeChat.user.city || ''}${activeChat.user.city && activeChat.user.state ? ', ' : ''}${activeChat.user.state || ''}`}
+                        icon={<HiLocationMarker />}
+                      />
+                    )}
+                  </div>
+                </div>
+              )}
+
+              {activeChat.userHistory && activeChat.userHistory.length > 0 && (
+                <div style={{
+                  marginTop: '10px',
+                  padding: '15px',
+                  background: 'rgba(255, 255, 255, 0.02)',
+                  borderRadius: '16px',
+                  border: '1px solid rgba(255, 255, 255, 0.05)'
+                }}>
+                  <div style={{
+                    color: '#C9A84C',
+                    fontSize: '0.65rem',
+                    textTransform: 'uppercase',
+                    letterSpacing: '1px',
+                    fontWeight: 700,
+                    marginBottom: '10px',
+                    borderBottom: '1px solid rgba(255, 255, 255, 0.05)',
+                    paddingBottom: '5px'
+                  }}>
+                    Booking History
+                  </div>
+                  <div style={{ display: 'flex', flexDirection: 'column', gap: '8px', maxHeight: '180px', overflowY: 'auto' }}>
+                    {activeChat.userHistory.map((hist, idx) => (
+                      <div key={idx} style={{
+                        display: 'flex',
+                        justifyContent: 'space-between',
+                        alignItems: 'center',
+                        background: 'rgba(255, 255, 255, 0.01)',
+                        padding: '8px 12px',
+                        borderRadius: '8px',
+                        border: '1px solid rgba(255, 255, 255, 0.02)',
+                        fontSize: '0.8rem'
+                      }}>
+                        <div>
+                          <div style={{ fontWeight: 600, color: '#fff', textTransform: 'capitalize' }}>
+                            {hist.eventType?.split('_').join(' ')}
+                          </div>
+                          <div style={{ fontSize: '0.65rem', color: '#555577' }}>
+                            {hist.eventDate ? new Date(hist.eventDate).toLocaleDateString() : new Date(hist.createdAt).toLocaleDateString()}
+                          </div>
+                        </div>
+                        <span style={{
+                          padding: '2px 8px',
+                          borderRadius: '6px',
+                          fontSize: '0.55rem',
+                          fontWeight: 700,
+                          textTransform: 'uppercase',
+                          background: hist.status === 'accepted' ? 'rgba(129, 199, 132, 0.1)' : hist.status === 'rejected' ? 'rgba(239, 83, 80, 0.1)' : hist.status === 'completed' ? 'rgba(79, 195, 247, 0.1)' : 'rgba(255,255,255,0.05)',
+                          color: hist.status === 'accepted' ? '#81C784' : hist.status === 'rejected' ? '#EF5350' : hist.status === 'completed' ? '#4FC3F7' : '#7a7a99'
+                        }}>
+                          {hist.status}
+                        </span>
+                      </div>
+                    ))}
+                  </div>
+                </div>
+              )}
+
+              <div style={{ marginTop: '15px', display: 'flex', flexDirection: 'column', gap: '10px', paddingTop: '15px', borderTop: '1px solid rgba(255,255,255,0.05)' }}>
+                {activeChat.status === 'new' && (
+                  <div style={{ display: 'flex', gap: '10px' }}>
+                    <button
+                      type="button"
+                      onClick={() => { handleUpdateStatus(activeChat._id, 'accepted'); setShowMobileDossier(false); }}
+                      style={{ flex: 1, background: '#81C784', color: '#000', border: 'none', padding: '12px', borderRadius: '12px', fontWeight: 800, cursor: 'pointer' }}
+                    >
+                      Accept
+                    </button>
+                    <button
+                      type="button"
+                      onClick={() => { setSelectedInq(activeChat); setShowRejectModal(true); setShowMobileDossier(false); }}
+                      style={{ flex: 1, background: 'rgba(239, 83, 80, 0.1)', color: '#EF5350', border: 'none', padding: '12px', borderRadius: '12px', fontWeight: 800, cursor: 'pointer' }}
+                    >
+                      Reject
+                    </button>
+                  </div>
+                )}
+                {activeChat.status === 'accepted' && (
+                  <button
+                    type="button"
+                    onClick={() => { handleUpdateStatus(activeChat._id, 'completed'); setShowMobileDossier(false); }}
+                    style={{ width: '100%', background: '#4FC3F7', color: '#000', border: 'none', padding: '15px', borderRadius: '12px', fontWeight: 800, cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '10px' }}
+                  >
+                    <HiCheckCircle size={20} /> Complete & Send Receipt
+                  </button>
+                )}
+                <button
+                  type="button"
+                  onClick={() => {
+                    setSelectedInq(activeChat);
+                    setEditForm({
+                      budget: activeChat.budget || '',
+                      eventDate: activeChat.eventDate ? activeChat.eventDate.split('T')[0] : '',
+                      message: activeChat.message || '',
+                      billing: activeChat.billing || { items: [], totalAmount: 0, amountPaid: 0 }
+                    });
+                    setShowEditModal(true);
+                    setShowMobileDossier(false);
+                  }}
+                  style={{ width: '100%', background: 'rgba(255,255,255,0.05)', color: '#fff', border: '1px solid rgba(255,255,255,0.1)', padding: '12px', borderRadius: '12px', fontWeight: 700, cursor: 'pointer' }}
+                >
+                  Update Billing / Details
+                </button>
+              </div>
+            </div>
+          </div>
         </div>
       )}
 
