@@ -195,7 +195,13 @@ const InquiryHistoryPage = () => {
                   </div>
                   <div style={{ display: 'flex', alignItems: 'center', gap: '25px', color: '#555577', fontSize: '0.9rem', flexWrap: 'wrap' }}>
                     <span style={{ display: 'flex', alignItems: 'center', gap: '8px' }}><HiClock /> {new Date(item.createdAt).toLocaleDateString()}</span>
-                    {item.budget && <span style={{ display: 'flex', alignItems: 'center', gap: '8px' }}><HiCurrencyDollar /> {item.budget}</span>}
+                    {item.billing?.totalAmount ? (
+                      <span style={{ display: 'flex', alignItems: 'center', gap: '8px', color: '#81C784', fontWeight: 600 }}>
+                        <HiCurrencyDollar /> Total Amount: ₹{item.billing.totalAmount}
+                      </span>
+                    ) : (
+                      item.budget && <span style={{ display: 'flex', alignItems: 'center', gap: '8px' }}><HiCurrencyDollar /> Budget: {item.budget}</span>
+                    )}
                   </div>
                 </div>
                 <div style={{ width: '50px', height: '50px', minWidth: '50px', borderRadius: '15px', background: 'rgba(201,168,76,0.05)', color: '#C9A84C', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: '1.5rem' }}>
@@ -249,12 +255,108 @@ const InquiryHistoryPage = () => {
                   {selectedInquiry.phone && <DetailRow label="Contact Number" value={selectedInquiry.phone} />}
                   {selectedInquiry.budget && <DetailRow label="Estimated Budget" value={selectedInquiry.budget} />}
                   {selectedInquiry.eventDate && <DetailRow label="Event Date" value={new Date(selectedInquiry.eventDate).toLocaleDateString()} />}
+
+                  {selectedInquiry.service && (
+                    <div style={{ 
+                      marginTop: '25px', 
+                      padding: '24px', 
+                      background: 'linear-gradient(135deg, rgba(201, 168, 76, 0.08), rgba(255, 255, 255, 0.01))', 
+                      borderRadius: '24px', 
+                      border: '1px solid rgba(201, 168, 76, 0.2)',
+                      boxShadow: '0 8px 32px rgba(0,0,0,0.3)'
+                    }}>
+                      <div style={{ 
+                        color: '#C9A84C', 
+                        fontSize: '0.75rem', 
+                        textTransform: 'uppercase', 
+                        letterSpacing: '2px', 
+                        fontWeight: 700, 
+                        marginBottom: '15px', 
+                        borderBottom: '1px solid rgba(201, 168, 76, 0.15)', 
+                        paddingBottom: '8px',
+                        display: 'flex',
+                        alignItems: 'center',
+                        gap: '8px'
+                      }}>
+                        <HiStar /> Service Member Details
+                      </div>
+                      <div style={{ display: 'flex', flexDirection: 'column', gap: '12px' }}>
+                        <DetailRow label="Business Name" value={selectedInquiry.service.name} />
+                        <DetailRow label="Service Type" value={selectedInquiry.service.type?.split('_').map(w => w.charAt(0).toUpperCase() + w.slice(1)).join(' ')} />
+                        {(selectedInquiry.service.city || selectedInquiry.service.state) && (
+                          <DetailRow 
+                            label="Location" 
+                            value={`${selectedInquiry.service.city || ''}${selectedInquiry.service.city && selectedInquiry.service.state ? ', ' : ''}${selectedInquiry.service.state || ''}`} 
+                          />
+                        )}
+                        {selectedInquiry.service.email && (
+                          <DetailRow label="Provider Email" value={selectedInquiry.service.email} />
+                        )}
+                        {selectedInquiry.service.phone && (
+                          <DetailRow label="Provider Phone" value={selectedInquiry.service.phone} />
+                        )}
+                        {selectedInquiry.service.instagram && (
+                          <DetailRow label="Instagram" value={`@${selectedInquiry.service.instagram.replace('@', '')}`} />
+                        )}
+                      </div>
+                    </div>
+                  )}
                   <div style={{ marginTop: '10px' }}>
                     <div style={{ color: '#555577', fontSize: '0.75rem', textTransform: 'uppercase', letterSpacing: '1px', marginBottom: '8px' }}>Project Description / Message</div>
                     <div style={{ background: 'rgba(255,255,255,0.02)', padding: '20px', borderRadius: '16px', border: '1px solid rgba(255,255,255,0.05)', color: '#d4d4e6', lineHeight: 1.6, fontSize: '0.95rem' }}>
                       {selectedInquiry.message || "No additional message provided."}
                     </div>
                   </div>
+
+                  {selectedInquiry.billing?.totalAmount > 0 && (
+                    <div style={{ 
+                      marginTop: '25px', 
+                      padding: '24px', 
+                      background: 'linear-gradient(135deg, rgba(129, 199, 132, 0.08), rgba(255, 255, 255, 0.01))', 
+                      borderRadius: '24px', 
+                      border: '1px solid rgba(129, 199, 132, 0.2)',
+                      boxShadow: '0 8px 32px rgba(0,0,0,0.3)'
+                    }}>
+                      <div style={{ 
+                        color: '#81C784', 
+                        fontSize: '0.75rem', 
+                        textTransform: 'uppercase', 
+                        letterSpacing: '2px', 
+                        fontWeight: 700, 
+                        marginBottom: '15px', 
+                        borderBottom: '1px solid rgba(129, 199, 132, 0.15)', 
+                        paddingBottom: '8px',
+                        display: 'flex',
+                        alignItems: 'center',
+                        gap: '8px'
+                      }}>
+                        <HiCurrencyDollar /> Billing Details & Invoice
+                      </div>
+                      <div style={{ display: 'flex', flexDirection: 'column', gap: '12px' }}>
+                        {(selectedInquiry.billing.items || []).map((item, i) => (
+                          <div key={i} style={{ display: 'flex', justifyContent: 'space-between', fontSize: '0.9rem', borderBottom: '1px solid rgba(255,255,255,0.03)', paddingBottom: '8px' }}>
+                            <span style={{ color: '#7a7a99' }}>{item.description}</span>
+                            <span style={{ color: '#fff', fontWeight: 500 }}>₹{item.amount}</span>
+                          </div>
+                        ))}
+                        <div style={{ marginTop: '5px', display: 'flex', justifyContent: 'space-between', fontSize: '0.95rem' }}>
+                          <span style={{ color: '#C9A84C', fontWeight: 700 }}>Total Cost</span>
+                          <span style={{ color: '#C9A84C', fontWeight: 700 }}>₹{selectedInquiry.billing.totalAmount}</span>
+                        </div>
+                        <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: '0.9rem' }}>
+                          <span style={{ color: '#81C784', fontWeight: 600 }}>Amount Paid</span>
+                          <span style={{ color: '#81C784', fontWeight: 600 }}>₹{selectedInquiry.billing.amountPaid}</span>
+                        </div>
+                        {selectedInquiry.billing.totalAmount - selectedInquiry.billing.amountPaid > 0 && (
+                          <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: '0.9rem' }}>
+                            <span style={{ color: '#EF5350' }}>Balance Due</span>
+                            <span style={{ color: '#EF5350', fontWeight: 600 }}>₹{selectedInquiry.billing.totalAmount - selectedInquiry.billing.amountPaid}</span>
+                          </div>
+                        )}
+                      </div>
+                    </div>
+                  )}
+
                   <div style={{ marginTop: '20px', padding: '20px', background: selectedInquiry.status === 'completed' ? 'rgba(76, 175, 80, 0.1)' : 'rgba(201,168,76,0.05)', borderRadius: '16px', border: `1px solid ${selectedInquiry.status === 'completed' ? '#81C784' : 'rgba(201,168,76,0.1)'}`, display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
                     <span style={{ color: '#7a7a99', fontSize: '0.85rem' }}>Inquiry Status</span>
                     <span style={{ color: selectedInquiry.status === 'completed' ? '#81C784' : '#C9A84C', fontWeight: 800, textTransform: 'uppercase', fontSize: '0.85rem' }}>{selectedInquiry.status}</span>

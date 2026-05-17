@@ -2,7 +2,7 @@ import React, { useState } from 'react';
 import { motion } from 'framer-motion';
 import { HiMail, HiPhone, HiLocationMarker, HiClock, HiCheck } from 'react-icons/hi';
 import axios from 'axios';
-import { useSearchParams } from 'react-router-dom';
+import { useSearchParams, Link } from 'react-router-dom';
 import { useAuth } from '../context/AuthContext';
 
 const fadeUp = { hidden: { opacity: 0, y: 40 }, visible: { opacity: 1, y: 0, transition: { duration: 0.6 } } };
@@ -176,10 +176,32 @@ const ContactPage = () => {
                 {error}
               </div>
             )}
-            <button type="submit" className="btn btn-primary" disabled={loading}
-              style={{ width: '100%', padding: '16px', fontSize: '1rem', marginTop: '8px', opacity: loading ? 0.7 : 1 }}>
-              {loading ? 'Sending...' : 'Submit Inquiry'}
-            </button>
+            {form.eventType !== 'total_event_organisation' && !form.service ? (
+              <div style={{ 
+                background: 'rgba(239, 83, 80, 0.06)', 
+                border: '1px dashed rgba(239, 83, 80, 0.3)', 
+                borderRadius: '16px', 
+                padding: '24px', 
+                textAlign: 'center', 
+                marginBottom: '20px',
+                boxShadow: '0 8px 32px rgba(0,0,0,0.2)'
+              }}>
+                <div style={{ color: '#EF5350', fontWeight: 800, fontSize: '1rem', marginBottom: '8px', letterSpacing: '1px', textTransform: 'uppercase' }}>
+                  ⚠️ Service Member Required
+                </div>
+                <p style={{ color: '#9999b3', fontSize: '0.88rem', margin: '0 0 20px 0', lineHeight: 1.6 }}>
+                  To book individual service categories (Weddings, Catering, Photography, etc.), you must first select a specific professional service member from our verified roster.
+                </p>
+                <Link to="/services" className="btn btn-outline" style={{ display: 'inline-flex', padding: '12px 28px', fontSize: '0.85rem', fontWeight: 700 }}>
+                  Go and select your service member in the service page
+                </Link>
+              </div>
+            ) : (
+              <button type="submit" className="btn btn-primary" disabled={loading}
+                style={{ width: '100%', padding: '16px', fontSize: '1rem', marginTop: '8px', opacity: loading ? 0.7 : 1 }}>
+                {loading ? 'Sending...' : 'Submit Inquiry'}
+              </button>
+            )}
           </motion.form>
         </div>
       </section>

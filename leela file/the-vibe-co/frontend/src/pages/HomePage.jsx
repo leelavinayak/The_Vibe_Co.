@@ -1,7 +1,7 @@
 import React, { useEffect, useState } from 'react';
 import { Link } from 'react-router-dom';
 import { motion, useScroll, useTransform, AnimatePresence } from 'framer-motion';
-import { HiArrowRight, HiStar, HiCalendar, HiUsers, HiSparkles, HiMusicNote, HiHeart, HiGlobe, HiX } from 'react-icons/hi';
+import { HiArrowRight, HiStar, HiCalendar, HiUsers, HiSparkles, HiMusicNote, HiHeart, HiGlobe, HiX, HiLocationMarker, HiDeviceMobile, HiHome } from 'react-icons/hi';
 import axios from 'axios';
 import { useAuth } from '../context/AuthContext';
 
@@ -9,10 +9,10 @@ const fadeUp = { hidden: { opacity: 0, y: 40 }, visible: { opacity: 1, y: 0, tra
 const stagger = { visible: { transition: { staggerChildren: 0.15 } } };
 
 const stats = [
-  { number: '500+', label: 'Events Delivered', icon: <HiCalendar /> },
-  { number: '50K+', label: 'Happy Guests', icon: <HiUsers /> },
-  { number: '120+', label: 'Corporate Clients', icon: <HiGlobe /> },
-  { number: '98%', label: 'Satisfaction Rate', icon: <HiStar /> },
+  // { number: '500+', label: 'Events Delivered', icon: <HiCalendar /> },
+  // { number: '50K+', label: 'Happy Guests', icon: <HiUsers /> },
+  // { number: '120+', label: 'Corporate Clients', icon: <HiGlobe /> },
+  // { number: '98%', label: 'Satisfaction Rate', icon: <HiStar /> },
 ];
 
 const services = [
@@ -182,7 +182,7 @@ const HomePage = () => {
               <motion.div initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 1, duration: 0.6 }}
                 style={{ display: 'flex', gap: '12px', justifyContent: 'center', flexWrap: 'wrap' }}>
                 <Link to="/events" className="btn btn-primary" style={{ padding: '12px 28px', fontSize: '0.85rem' }}>Explore Events <HiArrowRight /></Link>
-                <Link to="/contact" className="btn btn-outline" style={{ padding: '12px 28px', fontSize: '0.85rem' }}>Plan Your Event</Link>
+                <Link to="/services" className="btn btn-outline" style={{ padding: '12px 28px', fontSize: '0.85rem' }}>Plan Your Event</Link>
               </motion.div>
             </motion.div>
           </div>
@@ -196,7 +196,7 @@ const HomePage = () => {
               highlight: 'Wedding Planning',
               desc: 'Book your dream wedding today and get an exclusive 10% early-bird discount on all decor packages.',
               btn: 'Learn More',
-              link: '/contact'
+              link: '/services'
             },
             {
               bg: 'https://images.unsplash.com/photo-1540575467063-178a50c2df87?w=1600',
@@ -205,6 +205,15 @@ const HomePage = () => {
               highlight: 'Corporate Galas',
               desc: 'Impress your clients with a world-class corporate experience managed by our expert coordinators.',
               btn: 'View Service',
+              link: '/services'
+            },
+            {
+              bg: 'https://images.unsplash.com/photo-1512941937669-90a1b58e7e9c?w=1600',
+              badge: 'Hyperlocal Search',
+              title: 'Elite Services Near Your Place',
+              highlight: 'Services Near You',
+              desc: 'Find top event coordinators and service members close to you. Book directly on your mobile at home.',
+              btn: 'Search Nearby',
               link: '/services'
             }
           ].map((ad, idx) => (
@@ -236,7 +245,7 @@ const HomePage = () => {
 
         {/* Navigation Dots (Visual Indicator) */}
         <div className="promo-dots" style={{ position: 'absolute', bottom: '30px', left: '0', right: '0', display: 'flex', justifyContent: 'center', gap: '10px', zIndex: 10 }}>
-          {[0, 1, 2].map(i => (
+          {[0, 1, 2, 3].map(i => (
             <div key={i} style={{ width: '8px', height: '8px', borderRadius: '50%', background: 'rgba(201,168,76,0.5)', border: '1px solid #C9A84C' }} />
           ))}
         </div>
@@ -244,7 +253,7 @@ const HomePage = () => {
 
 
       {/* ═══════ STATS ═══════ */}
-      <section style={{ background: '#111111', borderTop: '1px solid rgba(201,168,76,0.1)', borderBottom: '1px solid rgba(201,168,76,0.1)' }}>
+      {/* <section style={{ background: '#111111', borderTop: '1px solid rgba(201,168,76,0.1)', borderBottom: '1px solid rgba(201,168,76,0.1)' }}>
         <div className="container" style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(140px, 1fr))', gap: '20px', padding: '40px 20px' }}>
           {stats.map((s, i) => (
             <motion.div key={i} initial="hidden" whileInView="visible" viewport={{ once: true }} variants={fadeUp}
@@ -255,7 +264,7 @@ const HomePage = () => {
             </motion.div>
           ))}
         </div>
-      </section>
+      </section> */}
 
       {/* ═══════ SERVICES ═══════ */}
       <section className="section" style={{ background: '#0a0a0a' }}>
@@ -280,6 +289,149 @@ const HomePage = () => {
               </motion.div>
             ))}
           </motion.div>
+        </div>
+      </section>
+
+      {/* ═══════ HYPERLOCAL MOBILE SERVICE SECTION ═══════ */}
+      <section className="section" style={{ background: '#070707', borderTop: '1px solid rgba(201,168,76,0.05)', overflow: 'hidden', position: 'relative' }}>
+        {/* Glowing Background Radial Accents */}
+        <div style={{ position: 'absolute', top: '50%', left: '-10%', width: '400px', height: '400px', background: 'radial-gradient(circle, rgba(201, 168, 76, 0.05) 0%, transparent 70%)', filter: 'blur(50px)', zIndex: 0 }} />
+        <div style={{ position: 'absolute', bottom: '10%', right: '-10%', width: '400px', height: '400px', background: 'radial-gradient(circle, rgba(201, 168, 76, 0.03) 0%, transparent 70%)', filter: 'blur(50px)', zIndex: 0 }} />
+        
+        <div className="container" style={{ position: 'relative', zIndex: 1 }}>
+          <div style={{ display: 'flex', flexWrap: 'wrap', alignItems: 'center', gap: '60px', justifyContent: 'center' }}>
+            
+            {/* Left Column: Visual Mobile Simulator Mockup */}
+            <motion.div 
+              initial="hidden"
+              whileInView="visible"
+              viewport={{ once: true }}
+              variants={fadeUp}
+              style={{ flex: '1 1 320px', display: 'flex', justifyContent: 'center', minWidth: '280px' }}
+            >
+              {/* Premium Phone Container */}
+              <div style={{
+                width: '310px',
+                height: '540px',
+                background: '#111',
+                borderRadius: '40px',
+                border: '6px solid rgba(255, 255, 255, 0.08)',
+                boxShadow: '0 25px 60px rgba(0,0,0,0.8), 0 0 40px rgba(201,168,76,0.08)',
+                position: 'relative',
+                overflow: 'hidden',
+                padding: '15px'
+              }}>
+                {/* Speaker Notch */}
+                <div style={{ position: 'absolute', top: '0', left: '50%', transform: 'translateX(-50%)', width: '110px', height: '22px', background: '#000', borderRadius: '0 0 15px 15px', zIndex: 10 }} />
+                
+                {/* Simulated Screen Content */}
+                <div style={{ width: '100%', height: '100%', display: 'flex', flexDirection: 'column', gap: '15px', padding: '15px 5px 0' }}>
+                  {/* App Header */}
+                  <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', borderBottom: '1px solid rgba(255,255,255,0.05)', paddingBottom: '10px', marginTop: '10px' }}>
+                    <span style={{ fontSize: '0.85rem', fontWeight: 800, color: '#C9A84C', letterSpacing: '1px', fontFamily: "'Playfair Display', serif" }}>THE VIBE CO.</span>
+                    <HiDeviceMobile size={16} color="#7a7a99" />
+                  </div>
+                  
+                  {/* Location Picker simulation */}
+                  <div style={{ background: 'rgba(255,255,255,0.02)', padding: '10px', borderRadius: '12px', border: '1px solid rgba(201,168,76,0.15)', display: 'flex', alignItems: 'center', gap: '10px' }}>
+                    <HiLocationMarker color="#C9A84C" size={16} />
+                    <div style={{ textAlign: 'left' }}>
+                      <div style={{ fontSize: '0.55rem', color: '#555577', textTransform: 'uppercase', letterSpacing: '0.5px' }}>Your Location</div>
+                      <div style={{ fontSize: '0.75rem', color: '#fff', fontWeight: 600 }}>Nearby Home (Local Search)</div>
+                    </div>
+                  </div>
+
+                  {/* Simulated list of nearby services */}
+                  <div style={{ fontSize: '0.6rem', color: '#555577', textTransform: 'uppercase', letterSpacing: '1px', textAlign: 'left', fontWeight: 700 }}>Top Services Near You</div>
+                  <div style={{ display: 'flex', flexDirection: 'column', gap: '8px', overflowY: 'hidden' }}>
+                    
+                    {/* Simulator Card 1 */}
+                    <div style={{ display: 'flex', gap: '10px', background: 'rgba(255,255,255,0.01)', padding: '8px 10px', borderRadius: '10px', border: '1px solid rgba(255,255,255,0.02)' }}>
+                      <div style={{ width: '32px', height: '32px', minWidth: '32px', borderRadius: '6px', background: 'rgba(201,168,76,0.08)', color: '#C9A84C', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+                        <HiHeart size={14} />
+                      </div>
+                      <div style={{ textAlign: 'left', flex: 1 }}>
+                        <div style={{ fontSize: '0.7rem', fontWeight: 700, color: '#fff' }}>Elite Catering & Decor</div>
+                        <div style={{ fontSize: '0.55rem', color: '#555577' }}>0.8 km • Active Nearby</div>
+                        <div style={{ display: 'flex', gap: '1px', marginTop: '2px' }}>
+                          {[...Array(5)].map((_, i) => <HiStar key={i} size={6} color="#C9A84C" />)}
+                        </div>
+                      </div>
+                    </div>
+
+                    {/* Simulator Card 2 */}
+                    <div style={{ display: 'flex', gap: '10px', background: 'rgba(255,255,255,0.01)', padding: '8px 10px', borderRadius: '10px', border: '1px solid rgba(255,255,255,0.02)' }}>
+                      <div style={{ width: '32px', height: '32px', minWidth: '32px', borderRadius: '6px', background: 'rgba(201,168,76,0.08)', color: '#C9A84C', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+                        <HiSparkles size={14} />
+                      </div>
+                      <div style={{ textAlign: 'left', flex: 1 }}>
+                        <div style={{ fontSize: '0.7rem', fontWeight: 700, color: '#fff' }}>Luxury Sound & Light</div>
+                        <div style={{ fontSize: '0.55rem', color: '#555577' }}>1.5 km • Booked Today</div>
+                        <div style={{ display: 'flex', gap: '1px', marginTop: '2px' }}>
+                          {[...Array(5)].map((_, i) => <HiStar key={i} size={6} color="#C9A84C" />)}
+                        </div>
+                      </div>
+                    </div>
+
+                    {/* Simulator Card 3 */}
+                    <div style={{ display: 'flex', gap: '10px', background: 'rgba(255,255,255,0.01)', padding: '8px 10px', borderRadius: '10px', border: '1px solid rgba(255,255,255,0.02)' }}>
+                      <div style={{ width: '32px', height: '32px', minWidth: '32px', borderRadius: '6px', background: 'rgba(201,168,76,0.08)', color: '#C9A84C', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+                        <HiMusicNote size={14} />
+                      </div>
+                      <div style={{ textAlign: 'left', flex: 1 }}>
+                        <div style={{ fontSize: '0.7rem', fontWeight: 700, color: '#fff' }}>Premium Photographers</div>
+                        <div style={{ fontSize: '0.55rem', color: '#555577' }}>2.3 km • Highly Rated</div>
+                        <div style={{ display: 'flex', gap: '1px', marginTop: '2px' }}>
+                          {[...Array(5)].map((_, i) => <HiStar key={i} size={6} color="#C9A84C" />)}
+                        </div>
+                      </div>
+                    </div>
+                  </div>
+                  
+                  {/* Simulator button */}
+                  <div style={{ marginTop: 'auto', background: '#C9A84C', color: '#000', padding: '10px', borderRadius: '10px', fontSize: '0.65rem', fontWeight: 800, textAlign: 'center', textTransform: 'uppercase', letterSpacing: '0.5px' }}>
+                    Find Services Nearby
+                  </div>
+                </div>
+              </div>
+            </motion.div>
+
+            {/* Right Column: Copy & Value Proposition */}
+            <motion.div 
+              initial="hidden"
+              whileInView="visible"
+              viewport={{ once: true }}
+              variants={fadeUp}
+              style={{ flex: '1.2 1 400px', minWidth: '300px', textAlign: 'left' }}
+            >
+              <span style={{ color: '#C9A84C', fontSize: '0.75rem', textTransform: 'uppercase', letterSpacing: '3px', fontWeight: 700, display: 'block', marginBottom: '15px' }}>
+                <HiLocationMarker style={{ marginRight: '6px', display: 'inline-block', verticalAlign: 'middle' }} size={16} /> Hyperlocal Event Solutions
+              </span>
+              <h2 style={{ fontFamily: "'Playfair Display', serif", fontSize: 'clamp(2rem, 4vw, 3rem)', color: '#fff', marginBottom: '20px', lineHeight: 1.2 }}>
+                Find Your Service <span className="text-gradient">Nearby</span>, Straight From Home
+              </h2>
+              <div className="gold-line" style={{ margin: '15px 0', width: '80px', height: '3px', background: '#C9A84C' }} />
+              
+              <p style={{ color: '#7a7a99', fontSize: '1.05rem', lineHeight: 1.8, marginBottom: '20px' }}>
+                Planning an extraordinary event shouldn't require leaving your living room. With **THE VIBE CO.**'s mobile-responsive hyperlocal network, discover and contract premium service members operating in your immediate neighborhood.
+              </p>
+              
+              <p style={{ color: '#7a7a99', fontSize: '1.05rem', lineHeight: 1.8, marginBottom: '35px' }}>
+                Filter options by location, city, and state to find vendors close to your venue. Browse their verified portfolios, view pricing packages, and initiate real-time conversations—all directly on your **mobile phone** while resting **at home**.
+              </p>
+
+              <div style={{ display: 'flex', gap: '20px', flexWrap: 'wrap' }}>
+                <Link to="/services" className="btn btn-primary" style={{ padding: '16px 36px', display: 'inline-flex', alignItems: 'center', gap: '10px' }}>
+                  <HiLocationMarker /> Search Services Nearby
+                </Link>
+                <div style={{ display: 'flex', alignItems: 'center', gap: '10px', color: '#fff', fontSize: '0.9rem' }}>
+                  <HiHome size={18} color="#C9A84C" />
+                  <span>100% Home Comfort</span>
+                </div>
+              </div>
+            </motion.div>
+
+          </div>
         </div>
       </section>
 
@@ -504,7 +656,7 @@ const HomePage = () => {
           <p style={{ color: '#9999b3', maxWidth: '550px', margin: '0 auto 40px', fontSize: '1.05rem' }}>
             Every great event begins with a conversation. Tell us your vision and we'll bring it to life.
           </p>
-          <Link to="/contact" className="btn btn-primary" style={{ padding: '18px 48px', fontSize: '1rem' }}>
+          <Link to="/services" className="btn btn-primary" style={{ padding: '18px 48px', fontSize: '1rem' }}>
             Start Planning <HiArrowRight />
           </Link>
         </motion.div>

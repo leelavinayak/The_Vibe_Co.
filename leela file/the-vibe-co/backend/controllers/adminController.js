@@ -112,7 +112,7 @@ const getAllInquiries = async (req, res) => {
 
     const inquiries = await Contact.find(query)
       .populate('user', 'name email country language state phone gender')
-      .populate('service', 'name type city state images')
+      .populate('service', 'name type city state images email phone priceStartsFrom instagram')
       .sort('-createdAt');
       
     // Map to include unread count and last message
@@ -124,10 +124,30 @@ const getAllInquiries = async (req, res) => {
         receiver: req.user._id, 
         read: false 
       });
+      
+      // Fetch user's event history (excluding the current inquiry/booking)
+      let userHistory = [];
+      if (inq.user || inq.email) {
+        const historyQuery = {
+          _id: { $ne: inq._id },
+          $or: []
+        };
+        if (inq.user) historyQuery.$or.push({ user: inq.user._id || inq.user });
+        if (inq.email) historyQuery.$or.push({ email: inq.email });
+        
+        if (historyQuery.$or.length > 0) {
+          userHistory = await Contact.find(historyQuery)
+            .populate('service', 'name type city state')
+            .sort('-createdAt')
+            .lean();
+        }
+      }
+
       return {
         ...inq._doc,
         lastMessage,
-        unreadCount
+        unreadCount,
+        userHistory
       };
     }));
 

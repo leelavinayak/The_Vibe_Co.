@@ -229,7 +229,7 @@ const getContacts = async (req, res) => {
   try {
     const contacts = await Contact.find()
       .populate('user', 'name email phone state country')
-      .populate('service', 'name type city state images')
+      .populate('service', 'name type city state images email phone priceStartsFrom instagram')
       .sort({ createdAt: -1 });
     res.json(contacts);
   } catch (error) {
@@ -260,7 +260,7 @@ const getMyInquiries = async (req, res) => {
   try {
     const Message = require('../models/Message');
     const inquiries = await Contact.find({ user: req.user._id })
-      .populate('service', 'name type city state images providerId')
+      .populate('service', 'name type city state images email phone priceStartsFrom instagram providerId')
       .sort({ createdAt: -1 });
 
     // Map to include unread count and last message

@@ -192,7 +192,7 @@ const getProfile = async (req, res) => {
     // Also get inquiry count and history
     const Contact = require('../models/Contact');
     const inquiries = await Contact.find({ user: user._id })
-      .populate('service', 'name type images city')
+      .populate('service', 'name type images city state email phone priceStartsFrom instagram')
       .sort('-createdAt');
 
     res.json({
