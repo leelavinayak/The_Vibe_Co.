@@ -1,5 +1,5 @@
 import React from 'react';
-import { Link } from 'react-router-dom';
+import { Link, useLocation } from 'react-router-dom';
 import { motion } from 'framer-motion';
 import { FaInstagram, FaTwitter, FaFacebookF, FaLinkedinIn, FaYoutube } from 'react-icons/fa';
 import { HiMail, HiPhone, HiLocationMarker } from 'react-icons/hi';
@@ -8,9 +8,11 @@ import { useAuth } from '../../context/AuthContext';
 
 const Footer = () => {
   const { user } = useAuth();
+  const location = useLocation();
   const currentYear = new Date().getFullYear();
 
-  if (user?.role === 'admin') return null;
+  const isAdminDashboard = location.pathname === '/admin' || (location.pathname === '/' && user?.role === 'admin');
+  if (isAdminDashboard) return null;
 
   const footerLinks = {
     company: [
@@ -35,8 +37,8 @@ const Footer = () => {
 
   const socials = [
     { icon: <FaInstagram />, url: '#', label: 'Instagram' },
-    { icon: <FaTwitter />, url: '#', label: 'Twitter' },
-    { icon: <FaFacebookF />, url: '#', label: 'Facebook' },
+    // { icon: <FaTwitter />, url: '#', label: 'Twitter' },
+    // { icon: <FaFacebookF />, url: '#', label: 'Facebook' },
     { icon: <FaLinkedinIn />, url: '#', label: 'LinkedIn' },
     { icon: <FaYoutube />, url: '#', label: 'YouTube' },
   ];
@@ -182,15 +184,15 @@ const Footer = () => {
             <div style={{ display: 'flex', flexDirection: 'column', gap: '16px' }}>
               <div style={{ display: 'flex', alignItems: 'center', gap: '12px', color: '#7a7a99' }}>
                 <HiMail style={{ color: '#C9A84C', fontSize: '1.1rem' }} />
-                <span style={{ fontSize: '0.9rem' }}>hello@thevibeco.com</span>
+                <span style={{ fontSize: '0.9rem' }}>thevibeco.@gmail.com</span>
               </div>
               <div style={{ display: 'flex', alignItems: 'center', gap: '12px', color: '#7a7a99' }}>
                 <HiPhone style={{ color: '#C9A84C', fontSize: '1.1rem' }} />
-                <span style={{ fontSize: '0.9rem' }}>+91 98765 43210</span>
+                <span style={{ fontSize: '0.9rem' }}>+91 8523086151</span>
               </div>
               <div style={{ display: 'flex', alignItems: 'flex-start', gap: '12px', color: '#7a7a99' }}>
                 <HiLocationMarker style={{ color: '#C9A84C', fontSize: '1.1rem', marginTop: '4px' }} />
-                <span style={{ fontSize: '0.9rem' }}>42 Luxury Lane,<br />Mumbai, India 400001</span>
+                <span style={{ fontSize: '0.9rem' }}>Tirupati, Andhra pradesh 517501<br /></span>
               </div>
             </div>
           </div>

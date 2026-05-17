@@ -45,7 +45,8 @@ const Navbar = () => {
     setIsMobileMenuOpen(false);
   }, [location]);
 
-  if (user?.role === 'admin' || location.pathname === '/admin') return null;
+  const isAdminDashboard = location.pathname === '/admin' || (location.pathname === '/' && user?.role === 'admin');
+  if (isAdminDashboard) return null;
 
   const navLinks = [
     { path: '/', label: 'Home' },
@@ -149,7 +150,7 @@ const Navbar = () => {
                   alignItems: 'center',
                   gap: '8px'
                 }}>
-                  THE VIBE CO.
+                  <div style={{ color: '#C9A84C' }}> THE VIBE CO. </div>
                   {location.pathname.startsWith('/admin') && (
                     <span style={{
                       fontSize: '0.5rem',

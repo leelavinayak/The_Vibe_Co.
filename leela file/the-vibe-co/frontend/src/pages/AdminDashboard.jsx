@@ -46,7 +46,7 @@ const Toast = ({ message, type, onClose }) => {
 const styles = `
   @media (max-width: 1024px) {
     .admin-sidebar {
-      width: 280px !important;
+      width: 320px !important;
       left: 0;
       transform: translateX(-100%);
       transition: transform 0.3s ease;
@@ -330,6 +330,11 @@ const AdminDashboard = () => {
   const [searchTerm, setSearchTerm] = useState('');
   const [limit, setLimit] = useState(50);
   const [userLimit, setUserLimit] = useState(50);
+  const [inquiriesLimit, setInquiriesLimit] = useState(50);
+  const [hubInquiriesLimit, setHubInquiriesLimit] = useState(50);
+  const [providerAppsLimit, setProviderAppsLimit] = useState(50);
+  const [reviewsLimit, setReviewsLimit] = useState(50);
+  const [notificationsLimit, setNotificationsLimit] = useState(50);
   const [filterState, setFilterState] = useState('');
   const [isAddUserModalOpen, setIsAddUserModalOpen] = useState(false);
   const [newUserForm, setNewUserForm] = useState({ name: '', email: '', phone: '', role: 'user', state: '', gender: '', country: 'India', language: 'English', password: '' });
@@ -712,7 +717,7 @@ const AdminDashboard = () => {
             <div style={{ display: 'grid', gridTemplateColumns: '1fr', gap: '40px' }}>
               <div style={{ background: 'rgba(15,15,15,0.4)', padding: '40px', borderRadius: '32px', border: '1px solid rgba(255,255,255,0.03)', backdropFilter: 'blur(30px)' }}>
                 <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '30px' }}>
-                  <h3 style={{ fontFamily: "'Playfair Display', serif", fontSize: '1.8rem', margin: 0 }}>Recent Applications</h3>
+                  <h3 style={{ fontFamily: "'Playfair Display', serif", fontSize: '1.8rem', margin: 0, color: '#C9A84C' }}>Recent Applications</h3>
                   <div style={{ display: 'flex', alignItems: 'center', gap: '15px' }}>
                     <span style={{ fontSize: '0.8rem', color: '#555577', textTransform: 'uppercase', letterSpacing: '1px' }}>Show:</span>
                     <select
@@ -721,10 +726,10 @@ const AdminDashboard = () => {
                       style={{ background: '#111', border: '1px solid #222', color: '#fff', padding: '6px 12px', borderRadius: '8px', fontSize: '0.8rem', cursor: 'pointer', outline: 'none' }}
                     >
                       <option value="10">10</option>
+                      <option value="20">20</option>
                       <option value="30">30</option>
                       <option value="50">50</option>
                       <option value="100">100</option>
-                      <option value="500">500</option>
                       <option value="all">All</option>
                     </select>
                   </div>
@@ -739,26 +744,43 @@ const AdminDashboard = () => {
           <motion.div key="inquiries" initial={{ opacity: 0, x: 30 }} animate={{ opacity: 1, x: 0 }}>
             <div style={{ background: 'rgba(15,15,15,0.4)', padding: '40px', borderRadius: '32px', border: '1px solid rgba(255,255,255,0.03)' }}>
               <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '30px' }}>
-                <h3 style={{ fontFamily: "'Playfair Display', serif", fontSize: '1.8rem', margin: 0 }}>Global Inquiries</h3>
-                <button 
-                  onClick={() => {
-                    const csvContent = "data:text/csv;charset=utf-8," 
-                      + ["Name,Email,Type,Status,Date"].join(",") + "\n"
-                      + data.inquiries.map(i => `${i.name},${i.email},${i.eventType},${i.status},${new Date(i.createdAt).toLocaleDateString()}`).join("\n");
-                    const encodedUri = encodeURI(csvContent);
-                    const link = document.createElement("a");
-                    link.setAttribute("href", encodedUri);
-                    link.setAttribute("download", "global_inquiries.csv");
-                    document.body.appendChild(link);
-                    link.click();
-                    link.remove();
-                  }}
-                  className="btn btn-outline" style={{ padding: '12px 25px', borderRadius: '14px' }}
-                >
-                  Download All Inquiries
-                </button>
+                <h3 style={{ fontFamily: "'Playfair Display', serif", fontSize: '1.8rem', margin: 0, color: '#C9A84C' }}>Global Inquiries</h3>
+                <div style={{ display: 'flex', alignItems: 'center', gap: '20px' }}>
+                  <div style={{ display: 'flex', alignItems: 'center', gap: '15px' }}>
+                    <span style={{ fontSize: '0.8rem', color: '#555577', textTransform: 'uppercase', letterSpacing: '1px' }}>Show:</span>
+                    <select
+                      value={inquiriesLimit}
+                      onChange={(e) => setInquiriesLimit(e.target.value === 'all' ? 10000 : parseInt(e.target.value))}
+                      style={{ background: '#111', border: '1px solid #222', color: '#fff', padding: '6px 12px', borderRadius: '8px', fontSize: '0.8rem', cursor: 'pointer', outline: 'none' }}
+                    >
+                      <option value="10">10</option>
+                      <option value="20">20</option>
+                      <option value="30">30</option>
+                      <option value="50">50</option>
+                      <option value="100">100</option>
+                      <option value="all">All</option>
+                    </select>
+                  </div>
+                  <button 
+                    onClick={() => {
+                      const csvContent = "data:text/csv;charset=utf-8," 
+                        + ["Name,Email,Type,Status,Date"].join(",") + "\n"
+                        + data.inquiries.map(i => `${i.name},${i.email},${i.eventType},${i.status},${new Date(i.createdAt).toLocaleDateString()}`).join("\n");
+                      const encodedUri = encodeURI(csvContent);
+                      const link = document.createElement("a");
+                      link.setAttribute("href", encodedUri);
+                      link.setAttribute("download", "global_inquiries.csv");
+                      document.body.appendChild(link);
+                      link.click();
+                      link.remove();
+                    }}
+                    className="btn btn-outline" style={{ padding: '12px 25px', borderRadius: '14px' }}
+                  >
+                    Download All Inquiries
+                  </button>
+                </div>
               </div>
-              <InquiryTable inquiries={filteredInquiries} onUpdate={handleUpdateInquiry} onInquiryClick={handleInquiryClick} />
+              <InquiryTable inquiries={filteredInquiries.slice(0, inquiriesLimit)} onUpdate={handleUpdateInquiry} onInquiryClick={handleInquiryClick} />
             </div>
           </motion.div>
         );
@@ -794,7 +816,7 @@ const AdminDashboard = () => {
                 >
                   <HiArrowLeft />
                 </button>
-                <h3 style={{ fontFamily: "'Playfair Display', serif", fontSize: '2.5rem', margin: 0, textTransform: 'capitalize' }}>
+                <h3 style={{ fontFamily: "'Playfair Display', serif", fontSize: '2.5rem', margin: 0, textTransform: 'capitalize', color: '#C9A84C' }}>
                   {selectedServiceHub.replace(/_/g, ' ')} <span className="text-gradient">Management</span>
                 </h3>
               </div>
@@ -874,9 +896,24 @@ const AdminDashboard = () => {
                     >
                       Download Inquiries
                     </button>
+                    <div style={{ position: 'relative', display: 'flex', alignItems: 'center', gap: '10px' }}>
+                      <span style={{ fontSize: '0.8rem', color: '#555577', textTransform: 'uppercase', letterSpacing: '1px', whiteSpace: 'nowrap' }}>Show:</span>
+                      <select 
+                        value={hubInquiriesLimit}
+                        onChange={(e) => setHubInquiriesLimit(e.target.value === 'all' ? 10000 : parseInt(e.target.value))}
+                        style={{ width: '100%', background: 'rgba(255,255,255,0.05)', border: '1px solid rgba(255,255,255,0.1)', padding: '12px', borderRadius: '12px', color: '#fff', outline: 'none', cursor: 'pointer' }}
+                      >
+                        <option value="10">10</option>
+                        <option value="20">20</option>
+                        <option value="30">30</option>
+                        <option value="50">50</option>
+                        <option value="100">100</option>
+                        <option value="all">All</option>
+                      </select>
+                    </div>
                   </div>
                   <div style={{ background: 'rgba(0,0,0,0.2)', padding: '20px', borderRadius: '24px', border: '1px solid rgba(255,255,255,0.03)' }}>
-                    <InquiryTable inquiries={filteredHubInquiries} onUpdate={handleUpdateInquiry} onInquiryClick={handleInquiryClick} />
+                    <InquiryTable inquiries={filteredHubInquiries.slice(0, hubInquiriesLimit)} onUpdate={handleUpdateInquiry} onInquiryClick={handleInquiryClick} />
                   </div>
                 </div>
               ) : (
@@ -901,6 +938,7 @@ const AdminDashboard = () => {
                       >
                         <option value="10">10</option>
                         <option value="20">20</option>
+                        <option value="30">30</option>
                         <option value="50">50</option>
                         <option value="100">100</option>
                         <option value="all">All</option>
@@ -989,7 +1027,7 @@ const AdminDashboard = () => {
               gap: '20px'
             }}>
               <div>
-                <h3 style={{ fontFamily: "'Playfair Display', serif", fontSize: '3rem', margin: 0 }}>Service <span className="text-gradient">Hub</span></h3>
+                <h3 style={{ fontFamily: "'Playfair Display', serif", fontSize: '3rem', margin: 0, color: '#C9A84C' }}>Service <span className="text-gradient">Hub</span></h3>
                 <p style={{ color: '#7a7a99', marginTop: '10px', fontSize: '1.1rem' }}>Manage your premium service ecosystem and provider partnerships.</p>
               </div>
               <button 
@@ -1087,8 +1125,25 @@ const AdminDashboard = () => {
           <motion.div key="provider_applications" initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }}>
             <div style={{ background: 'rgba(15,15,15,0.4)', padding: '40px', borderRadius: '32px', border: '1px solid rgba(255,255,255,0.03)' }}>
               <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '30px' }}>
-                <h3 style={{ fontFamily: "'Playfair Display', serif", fontSize: '1.8rem', margin: 0 }}>Partner Applications</h3>
-                <span style={{ fontSize: '0.9rem', color: '#7a7a99' }}>{(data?.providerApplications || []).length} total requests</span>
+                <h3 style={{ fontFamily: "'Playfair Display', serif", fontSize: '1.8rem', margin: 0, color: '#C9A84C' }}>Partner Applications</h3>
+                <div style={{ display: 'flex', alignItems: 'center', gap: '20px' }}>
+                  <div style={{ display: 'flex', alignItems: 'center', gap: '15px' }}>
+                    <span style={{ fontSize: '0.8rem', color: '#555577', textTransform: 'uppercase', letterSpacing: '1px' }}>Show:</span>
+                    <select
+                      value={providerAppsLimit}
+                      onChange={(e) => setProviderAppsLimit(e.target.value === 'all' ? 10000 : parseInt(e.target.value))}
+                      style={{ background: '#111', border: '1px solid #222', color: '#fff', padding: '6px 12px', borderRadius: '8px', fontSize: '0.8rem', cursor: 'pointer', outline: 'none' }}
+                    >
+                      <option value="10">10</option>
+                      <option value="20">20</option>
+                      <option value="30">30</option>
+                      <option value="50">50</option>
+                      <option value="100">100</option>
+                      <option value="all">All</option>
+                    </select>
+                  </div>
+                  <span style={{ fontSize: '0.9rem', color: '#7a7a99' }}>{(data?.providerApplications || []).length} total requests</span>
+                </div>
               </div>
               
               <div style={{ overflowX: 'auto' }}>
@@ -1102,7 +1157,7 @@ const AdminDashboard = () => {
                     </tr>
                   </thead>
                   <tbody>
-                    {data.providerApplications.map(app => (
+                    {data.providerApplications.slice(0, providerAppsLimit).map(app => (
                       <tr key={app._id} style={{ background: 'rgba(255,255,255,0.02)' }}>
                         <td style={{ padding: '20px 24px', borderRadius: '16px 0 0 16px' }}>
                           <div style={{ display: 'flex', alignItems: 'center', gap: '15px' }}>
@@ -1186,16 +1241,33 @@ const AdminDashboard = () => {
             <div style={{ background: 'rgba(15,15,15,0.4)', padding: '40px', borderRadius: '32px', border: '1px solid rgba(255,255,255,0.03)' }}>
               <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '40px', flexWrap: 'wrap', gap: '20px' }}>
                 <div>
-                  <h3 style={{ fontFamily: "'Playfair Display', serif", fontSize: '2.5rem', margin: 0 }}>Membership <span className="text-gradient">Registry</span></h3>
+                  <h3 style={{ fontFamily: "'Playfair Display', serif", fontSize: '2.5rem', margin: 0, color: '#C9A84C' }}>Membership <span className="text-gradient">Registry</span></h3>
                   <p style={{ color: '#7a7a99', marginTop: '5px' }}>Manage and monitor all platform participants.</p>
                 </div>
-                <button 
-                  onClick={() => setIsAddUserModalOpen(true)}
-                  className="btn btn-primary" 
-                  style={{ padding: '15px 30px', borderRadius: '16px', display: 'flex', alignItems: 'center', gap: '10px' }}
-                >
-                  <HiUsers /> Add New Member
-                </button>
+                <div style={{ display: 'flex', alignItems: 'center', gap: '25px' }}>
+                  <div style={{ display: 'flex', alignItems: 'center', gap: '15px' }}>
+                    <span style={{ fontSize: '0.8rem', color: '#555577', textTransform: 'uppercase', letterSpacing: '1px' }}>Show:</span>
+                    <select
+                      value={userLimit}
+                      onChange={(e) => setUserLimit(e.target.value === 'all' ? 10000 : parseInt(e.target.value))}
+                      style={{ background: '#111', border: '1px solid #222', color: '#fff', padding: '12px 18px', borderRadius: '12px', fontSize: '0.85rem', cursor: 'pointer', outline: 'none' }}
+                    >
+                      <option value="10">10</option>
+                      <option value="20">20</option>
+                      <option value="30">30</option>
+                      <option value="50">50</option>
+                      <option value="100">100</option>
+                      <option value="all">All</option>
+                    </select>
+                  </div>
+                  <button 
+                    onClick={() => setIsAddUserModalOpen(true)}
+                    className="btn btn-primary" 
+                    style={{ padding: '15px 30px', borderRadius: '16px', display: 'flex', alignItems: 'center', gap: '10px' }}
+                  >
+                    <HiUsers /> Add New Member
+                  </button>
+                </div>
               </div>
 
               {/* Three Books Navigation */}
@@ -1310,9 +1382,26 @@ const AdminDashboard = () => {
       case 'reviews':
         return (
           <motion.div key="reviews" initial={{ opacity: 0, y: 30 }} animate={{ opacity: 1, y: 0 }}>
-            <h3 style={{ fontFamily: "'Playfair Display', serif", fontSize: '1.8rem', marginBottom: '40px' }}>Review Moderation</h3>
+            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '40px' }}>
+              <h3 style={{ fontFamily: "'Playfair Display', serif", fontSize: '1.8rem', margin: 0, color: '#C9A84C' }}>Review Moderation</h3>
+              <div style={{ display: 'flex', alignItems: 'center', gap: '15px' }}>
+                <span style={{ fontSize: '0.8rem', color: '#555577', textTransform: 'uppercase', letterSpacing: '1px' }}>Show:</span>
+                <select
+                  value={reviewsLimit}
+                  onChange={(e) => setReviewsLimit(e.target.value === 'all' ? 10000 : parseInt(e.target.value))}
+                  style={{ background: '#111', border: '1px solid #222', color: '#fff', padding: '6px 12px', borderRadius: '8px', fontSize: '0.8rem', cursor: 'pointer', outline: 'none' }}
+                >
+                  <option value="10">10</option>
+                  <option value="20">20</option>
+                  <option value="30">30</option>
+                  <option value="50">50</option>
+                  <option value="100">100</option>
+                  <option value="all">All</option>
+                </select>
+              </div>
+            </div>
             <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(420px, 1fr))', gap: '24px' }}>
-              {data.reviews.map(review => (
+              {data.reviews.slice(0, reviewsLimit).map(review => (
                 <motion.div whileHover={{ y: -8 }} key={review._id} style={{ background: 'rgba(255,255,255,0.02)', padding: '30px', borderRadius: '24px', border: '1px solid rgba(255,255,255,0.05)', position: 'relative' }}>
                   <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: '20px' }}>
                     <div style={{ display: 'flex', alignItems: 'center', gap: '15px' }}>
@@ -1338,15 +1427,32 @@ const AdminDashboard = () => {
           <motion.div key="notifications" initial={{ opacity: 0, x: 30 }} animate={{ opacity: 1, x: 0 }}>
             <div style={{ background: 'rgba(15,15,15,0.4)', padding: '40px', borderRadius: '32px', border: '1px solid rgba(255,255,255,0.03)' }}>
               <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '30px' }}>
-                <h3 style={{ fontFamily: "'Playfair Display', serif", fontSize: '1.8rem', margin: 0 }}>System Alerts & Notifications</h3>
-                {notifications.length > 0 && (
-                  <button onClick={handleClearAll} style={{ background: 'none', border: 'none', color: '#ff4444', cursor: 'pointer', fontSize: '0.85rem' }}>Clear All History</button>
-                )}
+                <h3 style={{ fontFamily: "'Playfair Display', serif", fontSize: '1.8rem', margin: 0, color: '#C9A84C' }}>System Alerts & Notifications</h3>
+                <div style={{ display: 'flex', alignItems: 'center', gap: '20px' }}>
+                  <div style={{ display: 'flex', alignItems: 'center', gap: '15px' }}>
+                    <span style={{ fontSize: '0.8rem', color: '#555577', textTransform: 'uppercase', letterSpacing: '1px' }}>Show:</span>
+                    <select
+                      value={notificationsLimit}
+                      onChange={(e) => setNotificationsLimit(e.target.value === 'all' ? 10000 : parseInt(e.target.value))}
+                      style={{ background: '#111', border: '1px solid #222', color: '#fff', padding: '6px 12px', borderRadius: '8px', fontSize: '0.8rem', cursor: 'pointer', outline: 'none' }}
+                    >
+                      <option value="10">10</option>
+                      <option value="20">20</option>
+                      <option value="30">30</option>
+                      <option value="50">50</option>
+                      <option value="100">100</option>
+                      <option value="all">All</option>
+                    </select>
+                  </div>
+                  {notifications.length > 0 && (
+                    <button onClick={handleClearAll} style={{ background: 'none', border: 'none', color: '#ff4444', cursor: 'pointer', fontSize: '0.85rem' }}>Clear All History</button>
+                  )}
+                </div>
               </div>
 
               <div style={{ display: 'flex', flexDirection: 'column', gap: '20px' }}>
                 {notifications.length > 0 ? (
-                  notifications.map((notif) => (
+                  notifications.slice(0, notificationsLimit).map((notif) => (
                     <div
                       key={notif._id}
                       onClick={() => !notif.read && handleMarkAsRead(notif._id)}
@@ -1459,7 +1565,7 @@ const AdminDashboard = () => {
       <style>{`
         @media (max-width: 1024px) {
           .admin-sidebar {
-            width: 280px !important;
+            width: 320px !important;
             padding-top: 100px !important;
           }
           .admin-main {
@@ -1508,9 +1614,9 @@ const AdminDashboard = () => {
           top: '30px',
           left: '30px',
           zIndex: 1100,
-          width: '54px',
+          width: '68px',
           height: '54px',
-          borderRadius: '16px',
+          borderRadius: '18px',
           background: 'rgba(201, 168, 76, 0.15)',
           border: '1px solid rgba(201, 168, 76, 0.3)',
           color: '#C9A84C',
@@ -1584,11 +1690,11 @@ const AdminDashboard = () => {
       <motion.div
         initial={false}
         animate={{
-          x: typeof window !== 'undefined' && window.innerWidth <= 1024 ? (isSidebarOpen ? 0 : -280) : 0
+          x: typeof window !== 'undefined' && window.innerWidth <= 1024 ? (isSidebarOpen ? 0 : -320) : 0
         }}
         transition={{ type: 'spring', damping: 25, stiffness: 200 }}
         style={{
-          width: '280px',
+          width: '320px',
           background: '#0a0a0a',
           borderRight: '1px solid rgba(201,168,76,0.1)',
           padding: '120px 24px 40px',
@@ -1701,10 +1807,10 @@ const AdminDashboard = () => {
       </motion.div>
 
       {/* Content */}
-      <main style={{ flex: 1, padding: isDesktop ? '120px 60px 60px' : '100px 16px 40px', marginLeft: isDesktop ? '280px' : '0', position: 'relative', zIndex: 1 }} className="admin-main">
+      <main style={{ flex: 1, padding: isDesktop ? '120px 60px 60px' : '100px 16px 40px', marginLeft: isDesktop ? '320px' : '0', position: 'relative', zIndex: 1 }} className="admin-main">
         <div style={{ position: 'absolute', top: 0, right: 0, width: '600px', height: '600px', background: 'radial-gradient(circle at 100% 0%, rgba(201, 168, 76, 0.08) 0%, transparent 70%)', pointerEvents: 'none' }} />
 
-        <div style={{ maxWidth: '1400px', margin: '0 auto' }}>
+        <div style={{ maxWidth: '1750px', margin: '0 auto' }}>
           <header style={{ marginBottom: '80px' }}>
             <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-end', gap: '40px' }}>
               <motion.div
@@ -1770,7 +1876,7 @@ const AdminDashboard = () => {
                     {selectedInquiry?.eventType?.charAt(0).toUpperCase() || '?'}
                   </div>
                   <div>
-                    <h2 style={{ fontSize: '2rem', margin: 0, fontFamily: "'Playfair Display', serif", textTransform: 'capitalize', letterSpacing: '1px' }}>{selectedInquiry?.eventType} Inquiry</h2>
+                    <h2 style={{ fontSize: '2rem', margin: 0, fontFamily: "'Playfair Display', serif", textTransform: 'capitalize', letterSpacing: '1px', color: '#C9A84C' }}>{selectedInquiry?.eventType} Inquiry</h2>
                     <div style={{ display: 'flex', alignItems: 'center', gap: '10px', marginTop: '5px' }}>
                       <span style={{ color: '#C9A84C', fontSize: '0.8rem', fontWeight: 800, textTransform: 'uppercase', letterSpacing: '2px' }}>Dossier ID: {selectedInquiry?._id?.slice(-8).toUpperCase()}</span>
                       <span style={{ color: '#555577', fontSize: '0.8rem' }}>•</span>
@@ -1941,7 +2047,7 @@ const AdminDashboard = () => {
                 <div style={{ display: 'flex', alignItems: 'center', gap: '20px' }}>
                   <div style={{ width: '60px', height: '60px', borderRadius: '20px', background: 'linear-gradient(45deg, #C9A84C, #a68b3d)', color: '#000', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: '1.5rem', fontWeight: 800 }}>{selectedUser?.name?.charAt(0) || '?'}</div>
                   <div>
-                    <h2 style={{ fontSize: '1.8rem', margin: 0, fontFamily: "'Playfair Display', serif" }}>{selectedUser?.name}</h2>
+                    <h2 style={{ fontSize: '1.8rem', margin: 0, fontFamily: "'Playfair Display', serif", color: '#C9A84C' }}>{selectedUser?.name}</h2>
                     <span style={{ color: '#C9A84C', fontSize: '0.8rem', fontWeight: 700, textTransform: 'uppercase', letterSpacing: '1px' }}>Member Details</span>
                   </div>
                 </div>
@@ -2115,7 +2221,7 @@ const AdminDashboard = () => {
               onClick={e => e.stopPropagation()}
             >
               <div style={{ padding: '30px', borderBottom: '1px solid rgba(255,255,255,0.05)', display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-                <h3 style={{ fontFamily: "'Playfair Display', serif", fontSize: '1.8rem', margin: 0 }}>
+                <h3 style={{ fontFamily: "'Playfair Display', serif", fontSize: '1.8rem', margin: 0, color: '#C9A84C' }}>
                   {editingService ? 'Edit Service Provider' : 'Add New Service Provider'}
                 </h3>
                 <button onClick={() => setIsServiceModalOpen(false)} style={{ background: 'rgba(255,255,255,0.05)', border: 'none', color: '#fff', width: '36px', height: '36px', borderRadius: '50%', cursor: 'pointer' }}><HiX /></button>
@@ -2255,7 +2361,7 @@ const AdminDashboard = () => {
                     />
                   </div>
                   <div>
-                    <h2 style={{ fontSize: '2.2rem', margin: 0, fontFamily: "'Playfair Display', serif" }}>{selectedMember.name}</h2>
+                    <h2 style={{ fontSize: '2.2rem', margin: 0, fontFamily: "'Playfair Display', serif", color: '#C9A84C' }}>{selectedMember.name}</h2>
                     <p style={{ margin: '5px 0 0 0', color: '#C9A84C', fontWeight: 600 }}>{selectedMember.type.replace(/_/g, ' ')} Specialist</p>
                   </div>
                 </div>
@@ -2386,7 +2492,7 @@ const AdminDashboard = () => {
               onClick={e => e.stopPropagation()}
             >
               <div style={{ padding: '30px', borderBottom: '1px solid rgba(255,255,255,0.05)', display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-                <h3 style={{ fontFamily: "'Playfair Display', serif", fontSize: '1.8rem', margin: 0 }}>Add New User</h3>
+                <h3 style={{ fontFamily: "'Playfair Display', serif", fontSize: '1.8rem', margin: 0, color: '#C9A84C' }}>Add New User</h3>
                 <button onClick={() => setIsAddUserModalOpen(false)} style={{ background: 'rgba(255,255,255,0.05)', border: 'none', color: '#fff', width: '36px', height: '36px', borderRadius: '50%', cursor: 'pointer' }}><HiX /></button>
               </div>
 
@@ -2477,7 +2583,7 @@ const AdminDashboard = () => {
                 <div style={{ width: '60px', height: '60px', borderRadius: '50%', background: 'rgba(201,168,76,0.1)', display: 'flex', alignItems: 'center', justifyContent: 'center', color: '#C9A84C', fontSize: '30px', margin: '0 auto 20px' }}>
                   <HiOutlineShieldCheck />
                 </div>
-                <h3 style={{ fontFamily: "'Playfair Display', serif", fontSize: '1.8rem', color: '#fff', marginBottom: '10px' }}>Set Partner Password</h3>
+                <h3 style={{ fontFamily: "'Playfair Display', serif", fontSize: '1.8rem', color: '#C9A84C', marginBottom: '10px' }}>Set Partner Password</h3>
                 <p style={{ color: '#7a7a99', fontSize: '0.9rem' }}>Assign a temporary login password for <strong>{passwordModal.contactPerson}</strong>.</p>
               </div>
 

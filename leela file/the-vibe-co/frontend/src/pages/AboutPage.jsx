@@ -7,10 +7,10 @@ const fadeUp = { hidden: { opacity: 0, y: 40 }, visible: { opacity: 1, y: 0, tra
 const stagger = { visible: { transition: { staggerChildren: 0.15 } } };
 
 const team = [
-  { name: 'Arjun Malhotra', role: 'Founder & Creative Director', img: 'https://images.unsplash.com/photo-1507003211169-0a1dd7228f2d?w=400' },
-  { name: 'Meera Krishnan', role: 'Head of Operations', img: 'https://images.unsplash.com/photo-1494790108377-be9c29b29330?w=400' },
-  { name: 'Vikram Singh', role: 'Production Manager', img: 'https://images.unsplash.com/photo-1472099645785-5658abf4ff4e?w=400' },
-  { name: 'Nisha Patel', role: 'Design Lead', img: 'https://images.unsplash.com/photo-1438761681033-6461ffad8d80?w=400' },
+  { name: 'Leelavinayak Kothakota', role: 'Founder & Creative Director', img: 'https://images.unsplash.com/photo-1507003211169-0a1dd7228f2d?w=400' },
+  { name: 'Uday Varma Arkad', role: 'Head of Operations', img: 'https://images.unsplash.com/photo-1494790108377-be9c29b29330?w=400' },
+  { name: 'Vamsi Krishna ', role: 'Production Manager', img: 'https://images.unsplash.com/photo-1472099645785-5658abf4ff4e?w=400' },
+  { name: 'Vamsi Krishna', role: 'Design Lead', img: 'https://images.unsplash.com/photo-1438761681033-6461ffad8d80?w=400' },
 ];
 
 const values = [
@@ -85,7 +85,7 @@ const AboutPage = () => (
     </section>
 
     {/* Team */}
-    <section className="section" style={{ background: '#0a0a0a' }}>
+    {/* <section className="section" style={{ background: '#0a0a0a' }}>
       <div className="container">
         <motion.div initial="hidden" whileInView="visible" viewport={{ once: true }} variants={fadeUp} className="section-header">
           <span className="section-subtitle">The People</span>
@@ -136,7 +136,7 @@ const AboutPage = () => (
           ))}
         </motion.div>
       </div>
-    </section>
+    </section> */}
   </div>
 );
 
