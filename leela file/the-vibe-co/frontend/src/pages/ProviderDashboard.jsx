@@ -1,8 +1,8 @@
 import React, { useState, useEffect, useRef } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
-import { 
-  HiClipboardList, HiCheckCircle, HiXCircle, HiMail, HiPhone, 
-  HiCalendar, HiBadgeCheck, HiStar, HiEye, HiUserCircle, 
+import {
+  HiClipboardList, HiCheckCircle, HiXCircle, HiMail, HiPhone,
+  HiCalendar, HiBadgeCheck, HiStar, HiEye, HiUserCircle,
   HiChatAlt2, HiPaperAirplane, HiPencil, HiClock, HiDotsVertical,
   HiChevronRight, HiArrowLeft, HiLocationMarker, HiPaperClip, HiTrash
 } from 'react-icons/hi';
@@ -32,13 +32,13 @@ const ProviderDashboard = () => {
   const [showViewModal, setShowViewModal] = useState(false);
   const [rejectionReason, setRejectionReason] = useState('');
   const [toast, setToast] = useState({ show: false, message: '', type: 'success' });
-  
+
   // Chat state
   const [activeChat, setActiveChat] = useState(null);
   const [messages, setMessages] = useState([]);
   const [newMessage, setNewMessage] = useState('');
   const chatEndRef = useRef(null);
-  
+
   // Mobile specific state
   const [isMobile, setIsMobile] = useState(window.innerWidth < 992);
   const [showChatList, setShowChatList] = useState(true);
@@ -106,7 +106,11 @@ const ProviderDashboard = () => {
     let interval;
     if (activeTab === 'chat' && activeChat?._id) {
       fetchMessages(activeChat._id);
-      interval = setInterval(() => fetchMessages(activeChat._id), 5000);
+      markAsRead(activeChat._id);
+      interval = setInterval(() => {
+        fetchMessages(activeChat._id);
+        markAsRead(activeChat._id);
+      }, 5000);
     }
     return () => { if (interval) clearInterval(interval); };
   }, [activeTab, activeChat?._id]);
@@ -123,7 +127,7 @@ const ProviderDashboard = () => {
     try {
       if (!user?.token) return;
       setLoading(true);
-      
+
       if (user.serviceId) {
         try {
           const { data: serviceData } = await axios.get(`/api/services/${user.serviceId}`);
@@ -240,12 +244,12 @@ const ProviderDashboard = () => {
       await axios.put(`/api/provider-mgmt/inquiries/${id}`, { status, rejectionReason: reason }, {
         headers: { Authorization: `Bearer ${user.token}` }
       });
-      
+
       if (status === 'completed') {
         const inq = inquiries.find(i => i._id === id);
         const billingInfo = inq?.billing || { items: [], totalAmount: 0, amountPaid: 0 };
         const itemsList = billingInfo.items.map(item => `• ${item.description}: ₹${item.amount}`).join('\n');
-        
+
         const message = `*THE VIBE CO. - RECEIPT*\n\n` +
           `Hello ${inq?.name},\n` +
           `Your event booking has been successfully completed.\n\n` +
@@ -259,12 +263,12 @@ const ProviderDashboard = () => {
         // Open WhatsApp
         const whatsappUrl = `https://wa.me/${inq?.phone?.replace(/\+/g, '')}?text=${encodeURIComponent(message)}`;
         window.open(whatsappUrl, '_blank');
-        
+
         showToast('Booking completed! WhatsApp receipt opened.', 'success');
       } else {
         showToast(`Booking ${status} successfully!`, 'success');
       }
-      
+
       fetchProviderData();
       if (activeChat?._id === id) {
         setActiveChat(prev => ({ ...prev, status }));
@@ -300,16 +304,23 @@ const ProviderDashboard = () => {
     } else if (activeTab === 'previous') {
       filtered = filtered.filter(inq => inq.status === 'completed' || inq.status === 'rejected');
     }
-    
+
     if (searchTerm) {
-      filtered = filtered.filter(inq => 
-        (inq.name || '').toLowerCase().includes(searchTerm.toLowerCase()) || 
+      filtered = filtered.filter(inq =>
+        (inq.name || '').toLowerCase().includes(searchTerm.toLowerCase()) ||
         (inq.eventType || '').toLowerCase().includes(searchTerm.toLowerCase()) ||
         (inq.email || '').toLowerCase().includes(searchTerm.toLowerCase())
       );
     }
     return filtered;
   })();
+
+  const totalUnreadCount = (inquiries || []).reduce((acc, curr) => {
+    if (curr.status !== 'rejected') {
+      return acc + (curr.unreadCount || 0);
+    }
+    return acc;
+  }, 0);
 
   if (loading && inquiries.length === 0) {
     return <LoadingSpinner message="Synchronizing your partner dashboard..." />;
@@ -319,10 +330,10 @@ const ProviderDashboard = () => {
     <div style={{ minHeight: '100vh', background: '#0a0a0a', color: '#fff', paddingTop: '100px', paddingBottom: '60px' }}>
       <div className="container">
         {/* Header Section */}
-        <div style={{ 
-          display: 'flex', 
-          justifyContent: 'space-between', 
-          alignItems: isMobile ? 'center' : 'flex-end', 
+        <div style={{
+          display: 'flex',
+          justifyContent: 'space-between',
+          alignItems: isMobile ? 'center' : 'flex-end',
           marginBottom: isMobile ? '30px' : '40px',
           flexDirection: isMobile ? 'column' : 'row',
           textAlign: isMobile ? 'center' : 'left',
@@ -332,10 +343,10 @@ const ProviderDashboard = () => {
             <motion.h1
               initial={{ opacity: 0, x: -20 }}
               animate={{ opacity: 1, x: 0 }}
-              style={{ 
-                fontFamily: "'Playfair Display', serif", 
-                fontSize: isMobile ? '2rem' : '2.5rem', 
-                marginBottom: '5px' 
+              style={{
+                fontFamily: "'Playfair Display', serif",
+                fontSize: isMobile ? '2rem' : '2.5rem',
+                marginBottom: '5px'
               }}
             >
               Welcome, <span className="text-gradient">{user?.name || 'Partner'}</span>
@@ -345,13 +356,13 @@ const ProviderDashboard = () => {
 
           <div style={{ textAlign: isMobile ? 'center' : 'right' }}>
             <div style={{ fontSize: '0.65rem', color: '#C9A84C', letterSpacing: '2px', textTransform: 'uppercase', marginBottom: '8px' }}>Expertise</div>
-            <div style={{ 
-              display: 'flex', 
-              alignItems: 'center', 
-              gap: '8px', 
-              background: 'linear-gradient(135deg, rgba(201,168,76,0.15), rgba(201,168,76,0.05))', 
-              padding: '8px 20px', 
-              borderRadius: '12px', 
+            <div style={{
+              display: 'flex',
+              alignItems: 'center',
+              gap: '8px',
+              background: 'linear-gradient(135deg, rgba(201,168,76,0.15), rgba(201,168,76,0.05))',
+              padding: '8px 20px',
+              borderRadius: '12px',
               border: '1px solid rgba(201,168,76,0.3)',
               boxShadow: '0 4px 15px rgba(201,168,76,0.1)'
             }}>
@@ -364,25 +375,25 @@ const ProviderDashboard = () => {
         {/* Tabs and Search */}
         <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '30px', flexWrap: 'wrap', gap: '20px' }}>
           <div style={{ position: 'relative', width: isMobile ? '100%' : '350px' }}>
-            <input 
-              type="text" 
-              placeholder="Search by client name..." 
+            <input
+              type="text"
+              placeholder="Search by client name..."
               value={searchTerm}
               onChange={(e) => setSearchTerm(e.target.value)}
-              style={{ 
-                width: '100%', 
-                background: 'rgba(255,255,255,0.05)', 
-                border: '1px solid rgba(255,255,255,0.1)', 
-                padding: '14px 20px', 
-                borderRadius: '16px', 
-                color: '#fff', 
+              style={{
+                width: '100%',
+                background: 'rgba(255,255,255,0.05)',
+                border: '1px solid rgba(255,255,255,0.1)',
+                padding: '14px 20px',
+                borderRadius: '16px',
+                color: '#fff',
                 outline: 'none',
                 fontSize: '0.9rem'
               }}
             />
           </div>
-          
-          <div className="tabs-wrapper" style={{ 
+
+          <div className="tabs-wrapper" style={{
             width: isMobile ? '100vw' : 'auto',
             margin: isMobile ? '0 -20px' : '0',
             overflowX: isMobile ? 'auto' : 'visible',
@@ -390,12 +401,12 @@ const ProviderDashboard = () => {
             scrollbarWidth: 'none',
             msOverflowStyle: 'none'
           }}>
-            <div className="tabs-container" style={{ 
-              display: 'flex', 
-              gap: '10px', 
-              background: 'rgba(255,255,255,0.03)', 
-              padding: '6px', 
-              borderRadius: '20px', 
+            <div className="tabs-container" style={{
+              display: 'flex',
+              gap: '10px',
+              background: 'rgba(255,255,255,0.03)',
+              padding: '6px',
+              borderRadius: '20px',
               width: isMobile ? 'max-content' : 'fit-content',
               border: '1px solid rgba(255,255,255,0.05)'
             }}>
@@ -403,7 +414,7 @@ const ProviderDashboard = () => {
                 { id: 'recent', label: 'Recent', icon: <HiClock /> },
                 { id: 'previous', label: 'Previous', icon: <HiCheckCircle /> },
                 { id: 'history', label: 'History', icon: <HiClipboardList /> },
-                { id: 'chat', label: 'Chatbox', icon: <HiChatAlt2 /> }
+                { id: 'chat', label: 'Chatbox', icon: <HiChatAlt2 />, badge: totalUnreadCount > 0 ? totalUnreadCount : null }
               ].map(tab => (
                 <button
                   key={tab.id}
@@ -412,10 +423,30 @@ const ProviderDashboard = () => {
                     display: 'flex', alignItems: 'center', gap: '8px', padding: '10px 18px', borderRadius: '14px', border: 'none',
                     background: activeTab === tab.id ? '#C9A84C' : 'transparent',
                     color: activeTab === tab.id ? '#000' : '#7a7a99',
-                    fontWeight: 700, cursor: 'pointer', transition: '0.3s', whiteSpace: 'nowrap', fontSize: '0.85rem'
+                    fontWeight: 700, cursor: 'pointer', transition: '0.3s', whiteSpace: 'nowrap', fontSize: '0.85rem',
+                    position: 'relative'
                   }}
                 >
                   {tab.icon} {tab.label}
+                  {tab.badge && (
+                    <span style={{
+                      background: activeTab === tab.id ? '#000' : '#C9A84C',
+                      color: activeTab === tab.id ? '#C9A84C' : '#000',
+                      fontSize: '0.65rem',
+                      fontWeight: 900,
+                      padding: '2px 6px',
+                      borderRadius: '10px',
+                      marginLeft: '6px',
+                      display: 'inline-flex',
+                      alignItems: 'center',
+                      justifyContent: 'center',
+                      minWidth: '18px',
+                      height: '18px',
+                      boxShadow: '0 2px 5px rgba(0,0,0,0.2)'
+                    }}>
+                      {tab.badge}
+                    </span>
+                  )}
                 </button>
               ))}
             </div>
@@ -432,10 +463,10 @@ const ProviderDashboard = () => {
               className="chat-grid"
               style={{ 
                 display: 'grid', 
-                gridTemplateColumns: isMobile ? '1fr' : '350px 1fr 320px', 
+                gridTemplateColumns: isMobile ? '1fr' : (activeChat ? '350px 1fr 320px' : '350px 1fr'), 
                 gap: '24px', 
-                height: isMobile ? 'calc(100vh - 250px)' : '650px',
-                minHeight: isMobile ? '500px' : 'auto'
+                height: isMobile ? 'calc(100vh - 250px)' : 'calc(100vh - 340px)',
+                minHeight: isMobile ? '500px' : '500px'
               }}
             >
               {(!isMobile || showChatList) && (
@@ -446,11 +477,11 @@ const ProviderDashboard = () => {
                     </h3>
                   </div>
                   <div style={{ padding: '15px', flex: 1, overflowY: 'auto' }}>
-                    {inquiries.filter(i => i.status === 'accepted' || i.status === 'new').length === 0 ? (
+                    {inquiries.filter(i => i.status !== 'rejected').length === 0 ? (
                       <p style={{ color: '#555577', textAlign: 'center', marginTop: '40px' }}>No active conversations.</p>
                     ) : (
                       inquiries
-                        .filter(i => i.status === 'accepted' || i.status === 'new')
+                        .filter(i => i.status !== 'rejected')
                         .sort((a, b) => {
                           const timeA = (a.lastMessage ? new Date(a.lastMessage.createdAt) : new Date(a.createdAt)).getTime() || 0;
                           const timeB = (b.lastMessage ? new Date(b.lastMessage.createdAt) : new Date(b.createdAt)).getTime() || 0;
@@ -459,17 +490,17 @@ const ProviderDashboard = () => {
                         .map(inq => (
                           <div
                             key={inq._id}
-                            onClick={() => { setActiveChat(inq); markAsRead(inq._id); if(isMobile) setShowChatList(false); }}
+                            onClick={() => { setActiveChat(inq); markAsRead(inq._id); if (isMobile) setShowChatList(false); }}
                             style={{
-                              padding: '18px 15px', 
-                              borderRadius: '20px', 
-                              cursor: 'pointer', 
-                              transition: '0.3s cubic-bezier(0.4, 0, 0.2, 1)', 
+                              padding: '18px 15px',
+                              borderRadius: '20px',
+                              cursor: 'pointer',
+                              transition: '0.3s cubic-bezier(0.4, 0, 0.2, 1)',
                               marginBottom: '10px',
                               background: activeChat?._id === inq._id ? 'linear-gradient(135deg, rgba(201,168,76,0.15), rgba(201,168,76,0.05))' : 'transparent',
                               border: activeChat?._id === inq._id ? '1px solid rgba(201,168,76,0.2)' : '1px solid rgba(255,255,255,0.03)',
-                              display: 'flex', 
-                              gap: '12px', 
+                              display: 'flex',
+                              gap: '12px',
                               alignItems: 'center',
                               boxShadow: activeChat?._id === inq._id ? '0 8px 32px rgba(0,0,0,0.2)' : 'none'
                             }}
@@ -516,25 +547,25 @@ const ProviderDashboard = () => {
                           </div>
                         </div>
                       </div>
-                      
+
                       <div style={{ flex: 1, padding: '20px', overflowY: 'auto', display: 'flex', flexDirection: 'column', gap: '12px' }}>
                         {messages.map((msg, i) => {
                           const isOwn = (msg.sender?._id || msg.sender) === user?._id;
                           return (
-                            <div key={msg._id || i} style={{ 
-                              maxWidth: '85%', 
-                              padding: '14px 18px', 
-                              borderRadius: isOwn ? '20px 20px 4px 20px' : '20px 20px 20px 4px', 
-                              alignSelf: isOwn ? 'flex-end' : 'flex-start', 
-                              background: isOwn ? 'linear-gradient(135deg, #C9A84C, #a68b3d)' : 'rgba(255,255,255,0.06)', 
-                              color: isOwn ? '#000' : '#fff', 
+                            <div key={msg._id || i} style={{
+                              maxWidth: '85%',
+                              padding: '14px 18px',
+                              borderRadius: isOwn ? '20px 20px 4px 20px' : '20px 20px 20px 4px',
+                              alignSelf: isOwn ? 'flex-end' : 'flex-start',
+                              background: isOwn ? 'linear-gradient(135deg, #C9A84C, #a68b3d)' : 'rgba(255,255,255,0.06)',
+                              color: isOwn ? '#000' : '#fff',
                               position: 'relative',
                               boxShadow: '0 4px 20px rgba(0,0,0,0.2)',
                               border: isOwn ? 'none' : '1px solid rgba(255,255,255,0.05)'
                             }}>
                               {msg.fileUrl && (
                                 msg.fileType === 'image' ? <img src={msg.fileUrl} style={{ width: '100%', borderRadius: '10px', marginBottom: '8px' }} alt="" /> :
-                                <a href={msg.fileUrl} target="_blank" rel="noreferrer" style={{ display: 'flex', alignItems: 'center', gap: '8px', color: 'inherit', textDecoration: 'none', background: 'rgba(0,0,0,0.1)', padding: '8px', borderRadius: '8px', marginBottom: '8px' }}><HiClipboardList /> Document.pdf</a>
+                                  <a href={msg.fileUrl} target="_blank" rel="noreferrer" style={{ display: 'flex', alignItems: 'center', gap: '8px', color: 'inherit', textDecoration: 'none', background: 'rgba(0,0,0,0.1)', padding: '8px', borderRadius: '8px', marginBottom: '8px' }}><HiClipboardList /> Document.pdf</a>
                               )}
                               <div>{msg.text}</div>
                               <div style={{ display: 'flex', justifyContent: 'flex-end', gap: '4px', marginTop: '4px', opacity: 0.6, fontSize: '0.55rem' }}>
@@ -566,7 +597,7 @@ const ProviderDashboard = () => {
               )}
 
               {!isMobile && activeChat && (
-                <div className="chat-detail-panel" style={{ background: 'rgba(255,255,255,0.02)', borderRadius: '24px', border: '1px solid rgba(255,255,255,0.05)', padding: '25px', display: 'flex', flexDirection: 'column', gap: '20px' }}>
+                <div className="chat-detail-panel" style={{ background: 'rgba(255,255,255,0.02)', borderRadius: '24px', border: '1px solid rgba(255,255,255,0.05)', padding: '25px', display: 'flex', flexDirection: 'column', gap: '20px', overflowY: 'auto', height: '100%' }}>
                   <h4 style={{ color: '#C9A84C', fontSize: '0.75rem', textTransform: 'uppercase', letterSpacing: '2px', margin: 0 }}>Client Dossier</h4>
                   <div style={{ display: 'flex', flexDirection: 'column', gap: '15px' }}>
                     <DetailBlock label="Event Type" value={activeChat.eventType} icon={<HiStar />} />
@@ -574,24 +605,24 @@ const ProviderDashboard = () => {
                     <DetailBlock label="Phone" value={activeChat.phone || activeChat.user?.phone || 'N/A'} icon={<HiPhone />} />
                     <DetailBlock label="Date" value={activeChat.eventDate ? new Date(activeChat.eventDate).toLocaleDateString() : 'TBD'} icon={<HiCalendar />} />
                     <DetailBlock label="Total Cost" value={activeChat.billing?.totalAmount ? `₹${activeChat.billing.totalAmount}` : activeChat.budget} icon={<HiBadgeCheck />} />
-                    
+
                     {activeChat.user && (
-                      <div style={{ 
-                        marginTop: '15px', 
-                        padding: '15px', 
-                        background: 'rgba(255, 255, 255, 0.02)', 
-                        borderRadius: '16px', 
-                        border: '1px solid rgba(255, 255, 255, 0.05)' 
+                      <div style={{
+                        marginTop: '15px',
+                        padding: '15px',
+                        background: 'rgba(255, 255, 255, 0.02)',
+                        borderRadius: '16px',
+                        border: '1px solid rgba(255, 255, 255, 0.05)'
                       }}>
-                        <div style={{ 
-                          color: '#C9A84C', 
-                          fontSize: '0.65rem', 
-                          textTransform: 'uppercase', 
-                          letterSpacing: '1px', 
-                          fontWeight: 700, 
-                          marginBottom: '10px', 
-                          borderBottom: '1px solid rgba(255, 255, 255, 0.05)', 
-                          paddingBottom: '5px' 
+                        <div style={{
+                          color: '#C9A84C',
+                          fontSize: '0.65rem',
+                          textTransform: 'uppercase',
+                          letterSpacing: '1px',
+                          fontWeight: 700,
+                          marginBottom: '10px',
+                          borderBottom: '1px solid rgba(255, 255, 255, 0.05)',
+                          paddingBottom: '5px'
                         }}>
                           Registered Profile
                         </div>
@@ -601,10 +632,10 @@ const ProviderDashboard = () => {
                           {activeChat.user.phone && <DetailBlock label="Registered Phone" value={activeChat.user.phone} icon={<HiPhone />} />}
                           {activeChat.user.gender && <DetailBlock label="Gender" value={activeChat.user.gender?.toUpperCase()} icon={<HiUserCircle />} />}
                           {(activeChat.user.state || activeChat.user.country) && (
-                            <DetailBlock 
-                              label="Location" 
-                              value={`${activeChat.user.state || ''}${activeChat.user.state && activeChat.user.country ? ', ' : ''}${activeChat.user.country || ''}`} 
-                              icon={<HiLocationMarker />} 
+                            <DetailBlock
+                              label="Location"
+                              value={`${activeChat.user.state || ''}${activeChat.user.state && activeChat.user.country ? ', ' : ''}${activeChat.user.country || ''}`}
+                              icon={<HiLocationMarker />}
                             />
                           )}
                           {activeChat.user.language && <DetailBlock label="Language" value={activeChat.user.language} icon={<HiBadgeCheck />} />}
@@ -613,33 +644,33 @@ const ProviderDashboard = () => {
                     )}
 
                     {activeChat.userHistory && activeChat.userHistory.length > 0 && (
-                      <div style={{ 
-                        marginTop: '15px', 
-                        padding: '15px', 
-                        background: 'rgba(255, 255, 255, 0.02)', 
-                        borderRadius: '16px', 
-                        border: '1px solid rgba(255, 255, 255, 0.05)' 
+                      <div style={{
+                        marginTop: '15px',
+                        padding: '15px',
+                        background: 'rgba(255, 255, 255, 0.02)',
+                        borderRadius: '16px',
+                        border: '1px solid rgba(255, 255, 255, 0.05)'
                       }}>
-                        <div style={{ 
-                          color: '#C9A84C', 
-                          fontSize: '0.65rem', 
-                          textTransform: 'uppercase', 
-                          letterSpacing: '1px', 
-                          fontWeight: 700, 
-                          marginBottom: '10px', 
-                          borderBottom: '1px solid rgba(255, 255, 255, 0.05)', 
-                          paddingBottom: '5px' 
+                        <div style={{
+                          color: '#C9A84C',
+                          fontSize: '0.65rem',
+                          textTransform: 'uppercase',
+                          letterSpacing: '1px',
+                          fontWeight: 700,
+                          marginBottom: '10px',
+                          borderBottom: '1px solid rgba(255, 255, 255, 0.05)',
+                          paddingBottom: '5px'
                         }}>
                           Booking History
                         </div>
                         <div style={{ display: 'flex', flexDirection: 'column', gap: '8px', maxHeight: '180px', overflowY: 'auto' }}>
                           {activeChat.userHistory.map((hist, idx) => (
-                            <div key={idx} style={{ 
-                              display: 'flex', 
-                              justifyContent: 'space-between', 
-                              alignItems: 'center', 
-                              background: 'rgba(255, 255, 255, 0.01)', 
-                              padding: '8px 12px', 
+                            <div key={idx} style={{
+                              display: 'flex',
+                              justifyContent: 'space-between',
+                              alignItems: 'center',
+                              background: 'rgba(255, 255, 255, 0.01)',
+                              padding: '8px 12px',
                               borderRadius: '8px',
                               border: '1px solid rgba(255, 255, 255, 0.02)',
                               fontSize: '0.8rem'
@@ -653,10 +684,10 @@ const ProviderDashboard = () => {
                                 </div>
                               </div>
                               <span style={{
-                                padding: '2px 8px', 
-                                borderRadius: '6px', 
-                                fontSize: '0.55rem', 
-                                fontWeight: 700, 
+                                padding: '2px 8px',
+                                borderRadius: '6px',
+                                fontSize: '0.55rem',
+                                fontWeight: 700,
                                 textTransform: 'uppercase',
                                 background: hist.status === 'accepted' ? 'rgba(129, 199, 132, 0.1)' : hist.status === 'rejected' ? 'rgba(239, 83, 80, 0.1)' : hist.status === 'completed' ? 'rgba(79, 195, 247, 0.1)' : 'rgba(255,255,255,0.05)',
                                 color: hist.status === 'accepted' ? '#81C784' : hist.status === 'rejected' ? '#EF5350' : hist.status === 'completed' ? '#4FC3F7' : '#7a7a99'
@@ -668,17 +699,17 @@ const ProviderDashboard = () => {
                         </div>
                       </div>
                     )}
-                    
+
                     <div style={{ marginTop: '20px', display: 'flex', flexDirection: 'column', gap: '10px', paddingTop: '20px', borderTop: '1px solid rgba(255,255,255,0.05)' }}>
                       {activeChat.status === 'new' && (
                         <div style={{ display: 'flex', gap: '10px' }}>
-                          <button 
+                          <button
                             onClick={() => handleUpdateStatus(activeChat._id, 'accepted')}
                             style={{ flex: 1, background: '#81C784', color: '#000', border: 'none', padding: '12px', borderRadius: '12px', fontWeight: 800, cursor: 'pointer' }}
                           >
                             Accept
                           </button>
-                          <button 
+                          <button
                             onClick={() => { setSelectedInq(activeChat); setShowRejectModal(true); }}
                             style={{ background: 'rgba(239, 83, 80, 0.1)', color: '#EF5350', border: 'none', padding: '12px', borderRadius: '12px', fontWeight: 800, cursor: 'pointer' }}
                           >
@@ -687,23 +718,23 @@ const ProviderDashboard = () => {
                         </div>
                       )}
                       {activeChat.status === 'accepted' && (
-                        <button 
+                        <button
                           onClick={() => handleUpdateStatus(activeChat._id, 'completed')}
                           style={{ width: '100%', background: '#4FC3F7', color: '#000', border: 'none', padding: '15px', borderRadius: '12px', fontWeight: 800, cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '10px' }}
                         >
                           <HiCheckCircle size={20} /> Complete & Send Receipt
                         </button>
                       )}
-                      <button 
+                      <button
                         onClick={() => {
-                          setSelectedInq(activeChat); 
-                          setEditForm({ 
-                            budget: activeChat.budget || '', 
-                            eventDate: activeChat.eventDate ? activeChat.eventDate.split('T')[0] : '', 
+                          setSelectedInq(activeChat);
+                          setEditForm({
+                            budget: activeChat.budget || '',
+                            eventDate: activeChat.eventDate ? activeChat.eventDate.split('T')[0] : '',
                             message: activeChat.message || '',
                             billing: activeChat.billing || { items: [], totalAmount: 0, amountPaid: 0 }
-                          }); 
-                          setShowEditModal(true); 
+                          });
+                          setShowEditModal(true);
                         }}
                         style={{ width: '100%', background: 'rgba(255,255,255,0.05)', color: '#fff', border: '1px solid rgba(255,255,255,0.1)', padding: '12px', borderRadius: '12px', fontWeight: 700, cursor: 'pointer' }}
                       >
@@ -716,15 +747,15 @@ const ProviderDashboard = () => {
             </motion.div>
           ) : (
             <motion.div key="list" initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }}>
-              <div style={{ 
-                background: isMobile ? 'transparent' : 'rgba(255,255,255,0.02)', 
-                borderRadius: isMobile ? '0' : '32px', 
-                border: isMobile ? 'none' : '1px solid rgba(255,255,255,0.05)', 
-                padding: isMobile ? '10px 0 40px' : '40px' 
+              <div style={{
+                background: isMobile ? 'transparent' : 'rgba(255,255,255,0.02)',
+                borderRadius: isMobile ? '0' : '32px',
+                border: isMobile ? 'none' : '1px solid rgba(255,255,255,0.05)',
+                padding: isMobile ? '10px 0 40px' : '40px'
               }}>
-                <h3 style={{ 
-                  fontFamily: "'Playfair Display', serif", 
-                  fontSize: isMobile ? '1.5rem' : '1.8rem', 
+                <h3 style={{
+                  fontFamily: "'Playfair Display', serif",
+                  fontSize: isMobile ? '1.5rem' : '1.8rem',
                   marginBottom: isMobile ? '20px' : '30px',
                   padding: isMobile ? '0 10px' : '0'
                 }}>
@@ -741,9 +772,9 @@ const ProviderDashboard = () => {
                         })
                         .filter(inq => {
                           if (!searchTerm) return true;
-                          return (inq.name || '').toLowerCase().includes(searchTerm.toLowerCase()) || 
-                                 (inq.eventType || '').toLowerCase().includes(searchTerm.toLowerCase()) ||
-                                 (inq.email || '').toLowerCase().includes(searchTerm.toLowerCase());
+                          return (inq.name || '').toLowerCase().includes(searchTerm.toLowerCase()) ||
+                            (inq.eventType || '').toLowerCase().includes(searchTerm.toLowerCase()) ||
+                            (inq.email || '').toLowerCase().includes(searchTerm.toLowerCase());
                         })
                         .map(inq => (
                           <motion.div
@@ -751,10 +782,10 @@ const ProviderDashboard = () => {
                             initial={{ opacity: 0, y: 20 }}
                             animate={{ opacity: 1, y: 0 }}
                             onClick={() => { setSelectedInq(inq); setShowViewModal(true); }}
-                            style={{ 
-                              background: isMobile ? 'rgba(255,255,255,0.05)' : 'rgba(255,255,255,0.03)', 
-                              borderRadius: isMobile ? '24px' : '28px', 
-                              padding: isMobile ? '30px 24px' : '24px', 
+                            style={{
+                              background: isMobile ? 'rgba(255,255,255,0.05)' : 'rgba(255,255,255,0.03)',
+                              borderRadius: isMobile ? '24px' : '28px',
+                              padding: isMobile ? '30px 24px' : '24px',
                               border: '1px solid rgba(255,255,255,0.08)',
                               position: 'relative',
                               overflow: 'hidden',
@@ -766,24 +797,24 @@ const ProviderDashboard = () => {
                             whileHover={{ scale: 1.01, borderColor: 'rgba(201,168,76,0.3)' }}
                           >
                             {/* Card Background Decoration */}
-                            <div style={{ 
-                              position: 'absolute', 
-                              top: '-20px', 
-                              right: '-20px', 
-                              width: '100px', 
-                              height: '100px', 
+                            <div style={{
+                              position: 'absolute',
+                              top: '-20px',
+                              right: '-20px',
+                              width: '100px',
+                              height: '100px',
                               background: inq.status === 'completed' ? 'radial-gradient(circle, rgba(79, 195, 247, 0.05) 0%, transparent 70%)' : 'radial-gradient(circle, rgba(201, 168, 76, 0.05) 0%, transparent 70%)',
                               zIndex: 0
                             }} />
 
                             <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', marginBottom: '20px', position: 'relative', zIndex: 1 }}>
                               <div>
-                                <div 
-                                  style={{ 
-                                    fontWeight: 800, 
-                                    fontSize: '1.25rem', 
-                                    color: '#fff', 
-                                    marginBottom: '4px', 
+                                <div
+                                  style={{
+                                    fontWeight: 800,
+                                    fontSize: '1.25rem',
+                                    color: '#fff',
+                                    marginBottom: '4px',
                                     fontFamily: "'Playfair Display', serif",
                                     transition: 'color 0.2s',
                                   }}
@@ -834,16 +865,16 @@ const ProviderDashboard = () => {
                               )}
                               <div style={{ display: 'flex', gap: '8px' }}>
                                 <button onClick={(e) => { e.stopPropagation(); setSelectedInq(inq); setShowViewModal(true); }} style={{ width: '48px', height: '48px', background: 'rgba(255,255,255,0.05)', color: '#fff', border: '1px solid rgba(255,255,255,0.1)', borderRadius: '14px', display: 'flex', alignItems: 'center', justifyContent: 'center', cursor: 'pointer' }}><HiEye size={20} /></button>
-                                <button onClick={(e) => { 
+                                <button onClick={(e) => {
                                   e.stopPropagation();
-                                  setSelectedInq(inq); 
-                                  setEditForm({ 
-                                    budget: inq.budget || '', 
-                                    eventDate: inq.eventDate ? inq.eventDate.split('T')[0] : '', 
+                                  setSelectedInq(inq);
+                                  setEditForm({
+                                    budget: inq.budget || '',
+                                    eventDate: inq.eventDate ? inq.eventDate.split('T')[0] : '',
                                     message: inq.message || '',
                                     billing: inq.billing || { items: [], totalAmount: 0, amountPaid: 0 }
-                                  }); 
-                                  setShowEditModal(true); 
+                                  });
+                                  setShowEditModal(true);
                                 }} style={{ width: '48px', height: '48px', background: 'rgba(201,168,76,0.05)', color: '#C9A84C', border: '1px solid rgba(201,168,76,0.1)', borderRadius: '14px', display: 'flex', alignItems: 'center', justifyContent: 'center', cursor: 'pointer' }}><HiPencil size={20} /></button>
                               </div>
                             </div>
@@ -876,9 +907,9 @@ const ProviderDashboard = () => {
                               whileHover={{ background: 'rgba(255, 255, 255, 0.03)' }}
                             >
                               <td style={{ padding: '20px 24px', borderRadius: '16px 0 0 16px' }}>
-                                <div 
-                                  style={{ 
-                                    fontWeight: 600, 
+                                <div
+                                  style={{
+                                    fontWeight: 600,
                                     color: '#fff',
                                     transition: 'color 0.2s',
                                     display: 'inline-block'
@@ -924,16 +955,16 @@ const ProviderDashboard = () => {
                                   {(inq.status === 'accepted' || inq.status === 'new') && (
                                     <button onClick={(e) => { e.stopPropagation(); setActiveChat(inq); setActiveTab('chat'); }} style={{ background: 'rgba(201,168,76,0.1)', color: '#C9A84C', border: '1px solid rgba(201,168,76,0.3)', padding: '8px 16px', borderRadius: '8px', fontWeight: 700, cursor: 'pointer', display: 'flex', alignItems: 'center', gap: '5px' }}><HiChatAlt2 /> Chat</button>
                                   )}
-                                  <button onClick={(e) => { 
+                                  <button onClick={(e) => {
                                     e.stopPropagation();
-                                    setSelectedInq(inq); 
-                                    setEditForm({ 
-                                      budget: inq.budget || '', 
-                                      eventDate: inq.eventDate ? inq.eventDate.split('T')[0] : '', 
+                                    setSelectedInq(inq);
+                                    setEditForm({
+                                      budget: inq.budget || '',
+                                      eventDate: inq.eventDate ? inq.eventDate.split('T')[0] : '',
                                       message: inq.message || '',
                                       billing: inq.billing || { items: [], totalAmount: 0, amountPaid: 0 }
-                                    }); 
-                                    setShowEditModal(true); 
+                                    });
+                                    setShowEditModal(true);
                                   }} style={{ width: '40px', height: '40px', background: 'rgba(201,168,76,0.1)', color: '#C9A84C', border: 'none', borderRadius: '8px', display: 'flex', alignItems: 'center', justifyContent: 'center', cursor: 'pointer' }}><HiPencil /></button>
                                   <button onClick={(e) => { e.stopPropagation(); setSelectedInq(inq); setShowViewModal(true); }} style={{ width: '40px', height: '40px', background: 'rgba(255,255,255,0.05)', color: '#fff', border: 'none', borderRadius: '8px', display: 'flex', alignItems: 'center', justifyContent: 'center', cursor: 'pointer' }}><HiEye /></button>
                                 </div>
@@ -950,14 +981,14 @@ const ProviderDashboard = () => {
           )}
         </AnimatePresence>
       </div>
-      
+
       {/* Modals */}
       {showRejectModal && (
         <div style={{ position: 'fixed', inset: 0, background: 'rgba(0,0,0,0.8)', backdropFilter: 'blur(10px)', zIndex: 1000, display: 'flex', alignItems: 'center', justifyContent: 'center', padding: '20px' }}>
           <div style={{ background: '#111', border: '1px solid #ff444430', borderRadius: '24px', padding: '40px', maxWidth: '500px', width: '100%' }}>
             <h3 style={{ color: '#ff4444', marginBottom: '20px' }}>Reject Inquiry</h3>
-            <textarea 
-              placeholder="Reason for rejection..." 
+            <textarea
+              placeholder="Reason for rejection..."
               value={rejectionReason}
               onChange={(e) => setRejectionReason(e.target.value)}
               style={{ width: '100%', height: '120px', background: 'rgba(255,255,255,0.05)', border: '1px solid rgba(255,255,255,0.1)', borderRadius: '14px', color: '#fff', padding: '15px', outline: 'none', marginBottom: '20px' }}
@@ -980,7 +1011,7 @@ const ProviderDashboard = () => {
               </div>
               <button onClick={() => setShowViewModal(false)} style={{ background: 'rgba(255,255,255,0.05)', border: 'none', color: '#fff', width: '40px', height: '40px', borderRadius: '12px', cursor: 'pointer' }}>X</button>
             </div>
-            
+
             <div style={{ display: 'grid', gridTemplateColumns: isMobile ? '1fr' : '1fr 1fr', gap: '30px' }}>
               <DetailBlock label="Client Name" value={selectedInq.name} icon={<HiUserCircle />} />
               <DetailBlock label="Event Type" value={selectedInq.eventType} icon={<HiStar />} />
@@ -991,22 +1022,22 @@ const ProviderDashboard = () => {
             </div>
 
             {selectedInq.user && (
-              <div style={{ 
-                marginTop: '30px', 
-                padding: '24px', 
-                background: 'linear-gradient(135deg, rgba(201, 168, 76, 0.08), rgba(255, 255, 255, 0.01))', 
-                borderRadius: '24px', 
+              <div style={{
+                marginTop: '30px',
+                padding: '24px',
+                background: 'linear-gradient(135deg, rgba(201, 168, 76, 0.08), rgba(255, 255, 255, 0.01))',
+                borderRadius: '24px',
                 border: '1px solid rgba(201, 168, 76, 0.2)',
                 boxShadow: '0 8px 32px rgba(0,0,0,0.3)'
               }}>
-                <div style={{ 
-                  color: '#C9A84C', 
-                  fontSize: '0.75rem', 
-                  textTransform: 'uppercase', 
-                  letterSpacing: '2px', 
-                  fontWeight: 700, 
-                  marginBottom: '15px', 
-                  borderBottom: '1px solid rgba(201, 168, 76, 0.15)', 
+                <div style={{
+                  color: '#C9A84C',
+                  fontSize: '0.75rem',
+                  textTransform: 'uppercase',
+                  letterSpacing: '2px',
+                  fontWeight: 700,
+                  marginBottom: '15px',
+                  borderBottom: '1px solid rgba(201, 168, 76, 0.15)',
                   paddingBottom: '8px',
                   display: 'flex',
                   alignItems: 'center',
@@ -1020,10 +1051,10 @@ const ProviderDashboard = () => {
                   {selectedInq.user.phone && <DetailBlock label="Registered Phone" value={selectedInq.user.phone} icon={<HiPhone />} />}
                   {selectedInq.user.gender && <DetailBlock label="Gender" value={selectedInq.user.gender?.toUpperCase()} icon={<HiUserCircle />} />}
                   {(selectedInq.user.state || selectedInq.user.country) && (
-                    <DetailBlock 
-                      label="Location" 
-                      value={`${selectedInq.user.state || ''}${selectedInq.user.state && selectedInq.user.country ? ', ' : ''}${selectedInq.user.country || ''}`} 
-                      icon={<HiLocationMarker />} 
+                    <DetailBlock
+                      label="Location"
+                      value={`${selectedInq.user.state || ''}${selectedInq.user.state && selectedInq.user.country ? ', ' : ''}${selectedInq.user.country || ''}`}
+                      icon={<HiLocationMarker />}
                     />
                   )}
                   {selectedInq.user.language && <DetailBlock label="Language" value={selectedInq.user.language} icon={<HiBadgeCheck />} />}
@@ -1065,12 +1096,12 @@ const ProviderDashboard = () => {
                 <span style={{ fontSize: '0.7rem', color: '#555577', textTransform: 'uppercase', display: 'block', marginBottom: '15px', borderBottom: '1px solid rgba(255,255,255,0.05)', paddingBottom: '10px' }}>Client Event History</span>
                 <div style={{ display: 'flex', flexDirection: 'column', gap: '12px' }}>
                   {selectedInq.userHistory.map((hist, idx) => (
-                    <div key={idx} style={{ 
-                      display: 'flex', 
-                      justifyContent: 'space-between', 
-                      alignItems: 'center', 
-                      background: 'rgba(255, 255, 255, 0.02)', 
-                      padding: '12px 18px', 
+                    <div key={idx} style={{
+                      display: 'flex',
+                      justifyContent: 'space-between',
+                      alignItems: 'center',
+                      background: 'rgba(255, 255, 255, 0.02)',
+                      padding: '12px 18px',
                       borderRadius: '12px',
                       border: '1px solid rgba(255, 255, 255, 0.03)'
                     }}>
@@ -1084,10 +1115,10 @@ const ProviderDashboard = () => {
                       </div>
                       <div style={{ textAlign: 'right' }}>
                         <span style={{
-                          padding: '4px 10px', 
-                          borderRadius: '8px', 
-                          fontSize: '0.65rem', 
-                          fontWeight: 700, 
+                          padding: '4px 10px',
+                          borderRadius: '8px',
+                          fontSize: '0.65rem',
+                          fontWeight: 700,
                           textTransform: 'uppercase',
                           background: hist.status === 'accepted' ? 'rgba(129, 199, 132, 0.1)' : hist.status === 'rejected' ? 'rgba(239, 83, 80, 0.1)' : hist.status === 'completed' ? 'rgba(79, 195, 247, 0.1)' : 'rgba(255,255,255,0.05)',
                           color: hist.status === 'accepted' ? '#81C784' : hist.status === 'rejected' ? '#EF5350' : hist.status === 'completed' ? '#4FC3F7' : '#7a7a99'
@@ -1111,118 +1142,129 @@ const ProviderDashboard = () => {
         <div style={{ position: 'fixed', inset: 0, background: 'rgba(0,0,0,0.8)', backdropFilter: 'blur(10px)', zIndex: 1000, display: 'flex', alignItems: 'center', justifyContent: 'center', padding: '20px' }}>
           <form onSubmit={handleUpdateDetails} style={{ background: '#111', border: '1px solid rgba(201,168,76,0.2)', borderRadius: '32px', padding: '40px', maxWidth: '500px', width: '100%' }}>
             <h3 style={{ fontSize: '1.8rem', marginBottom: '30px' }}>Edit <span className="text-gradient">Inquiry</span></h3>
-            
+
             <div style={{ display: 'flex', flexDirection: 'column', gap: '20px' }}>
               <div>
                 <label style={{ display: 'block', fontSize: '0.7rem', color: '#555577', textTransform: 'uppercase', marginBottom: '8px' }}>Event Date</label>
-                <input 
-                  type="date" 
-                  value={editForm.eventDate} 
-                  onChange={(e) => setEditForm({...editForm, eventDate: e.target.value})}
+                <input
+                  type="date"
+                  value={editForm.eventDate}
+                  onChange={(e) => setEditForm({ ...editForm, eventDate: e.target.value })}
                   style={{ width: '100%', background: 'rgba(255,255,255,0.05)', border: '1px solid rgba(255,255,255,0.1)', borderRadius: '12px', padding: '12px', color: '#fff', outline: 'none' }}
                 />
               </div>
 
               <div>
                 <label style={{ display: 'block', fontSize: '0.7rem', color: '#555577', textTransform: 'uppercase', marginBottom: '8px' }}>Budget</label>
-                <input 
-                  type="text" 
+                <input
+                  type="text"
                   placeholder="e.g. ₹50,000"
-                  value={editForm.budget} 
-                  onChange={(e) => setEditForm({...editForm, budget: e.target.value})}
+                  value={editForm.budget}
+                  onChange={(e) => {
+                    const cleanVal = e.target.value.replace(/[^0-9]/g, '');
+                    const numVal = cleanVal ? Number(cleanVal) : 0;
+                    setEditForm({
+                      ...editForm,
+                      budget: e.target.value,
+                      billing: {
+                        ...(editForm.billing || { items: [], totalAmount: 0, amountPaid: 0 }),
+                        totalAmount: numVal
+                      }
+                    });
+                  }}
                   style={{ width: '100%', background: 'rgba(255,255,255,0.05)', border: '1px solid rgba(255,255,255,0.1)', borderRadius: '12px', padding: '12px', color: '#fff', outline: 'none' }}
                 />
               </div>
 
               <div>
                 <label style={{ display: 'block', fontSize: '0.7rem', color: '#555577', textTransform: 'uppercase', marginBottom: '8px' }}>Client Message</label>
-                <textarea 
-                  value={editForm.message} 
-                  onChange={(e) => setEditForm({...editForm, message: e.target.value})}
+                <textarea
+                  value={editForm.message}
+                  onChange={(e) => setEditForm({ ...editForm, message: e.target.value })}
                   style={{ width: '100%', height: '100px', background: 'rgba(255,255,255,0.05)', border: '1px solid rgba(255,255,255,0.1)', borderRadius: '12px', padding: '12px', color: '#fff', outline: 'none', resize: 'none' }}
                 />
               </div>
             </div>
 
-              <div>
-                <label style={{ display: 'block', fontSize: '0.7rem', color: '#555577', textTransform: 'uppercase', marginBottom: '15px', borderBottom: '1px solid rgba(255,255,255,0.05)', paddingBottom: '10px' }}>Billing & Services</label>
-                <div style={{ display: 'flex', flexDirection: 'column', gap: '10px', marginBottom: '15px' }}>
-                  {(editForm.billing?.items || []).map((item, idx) => (
-                    <div key={idx} style={{ display: 'flex', gap: '10px' }}>
-                      <input 
-                        type="text" 
-                        placeholder="Service name..." 
-                        value={item.description} 
-                        onChange={(e) => {
-                          const newItems = editForm.billing.items.map((it, i) => 
-                            i === idx ? { ...it, description: e.target.value } : it
-                          );
-                          setEditForm({ ...editForm, billing: { ...editForm.billing, items: newItems } });
-                        }}
-                        style={{ flex: 2, background: 'rgba(255,255,255,0.03)', border: '1px solid rgba(255,255,255,0.1)', borderRadius: '8px', padding: '8px 12px', color: '#fff', fontSize: '0.85rem' }}
-                      />
-                      <input 
-                        type="number" 
-                        placeholder="Amount" 
-                        value={item.amount || ''} 
-                        onChange={(e) => {
-                          const val = e.target.value === '' ? 0 : Number(e.target.value);
-                          const newItems = editForm.billing.items.map((it, i) => 
-                            i === idx ? { ...it, amount: val } : it
-                          );
-                          const total = newItems.reduce((acc, curr) => acc + (curr.amount || 0), 0);
-                          setEditForm({ 
-                            ...editForm, 
-                            budget: `₹${total}`,
-                            billing: { ...editForm.billing, items: newItems, totalAmount: total } 
-                          });
-                        }}
-                        style={{ flex: 1, background: 'rgba(255,255,255,0.03)', border: '1px solid rgba(255,255,255,0.1)', borderRadius: '8px', padding: '8px 12px', color: '#fff', fontSize: '0.85rem' }}
-                      />
-                      <button 
-                        type="button"
-                        onClick={() => {
-                          const newItems = editForm.billing.items.filter((_, i) => i !== idx);
-                          const total = newItems.reduce((acc, curr) => acc + (curr.amount || 0), 0);
-                          setEditForm({ 
-                            ...editForm, 
-                            budget: `₹${total}`,
-                            billing: { ...editForm.billing, items: newItems, totalAmount: total } 
-                          });
-                        }}
-                        style={{ background: 'rgba(239, 83, 80, 0.1)', color: '#EF5350', border: 'none', borderRadius: '8px', width: '35px', cursor: 'pointer' }}
-                      >x</button>
-                    </div>
-                  ))}
-                  <button 
-                    type="button" 
-                    onClick={() => {
-                      const newItems = [...(editForm.billing?.items || []), { description: '', amount: 0 }];
-                      setEditForm({ ...editForm, billing: { ...editForm.billing, items: newItems } });
-                    }}
-                    style={{ background: 'rgba(201,168,76,0.1)', color: '#C9A84C', border: '1px dashed rgba(201,168,76,0.3)', padding: '10px', borderRadius: '12px', cursor: 'pointer', fontSize: '0.8rem', fontWeight: 700 }}
-                  >+ Add Service Item</button>
-                </div>
-                
-                <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '15px' }}>
-                  <div>
-                    <label style={{ display: 'block', fontSize: '0.65rem', color: '#555577', marginBottom: '5px' }}>Total Amount</label>
-                    <div style={{ background: 'rgba(255,255,255,0.05)', padding: '10px', borderRadius: '10px', color: '#fff', fontWeight: 800 }}>₹{editForm.billing?.totalAmount || 0}</div>
-                  </div>
-                  <div>
-                    <label style={{ display: 'block', fontSize: '0.65rem', color: '#555577', marginBottom: '5px' }}>Amount Paid</label>
-                    <input 
-                      type="number" 
-                      value={editForm.billing?.amountPaid || ''}
+            <div>
+              <label style={{ display: 'block', fontSize: '0.7rem', color: '#555577', textTransform: 'uppercase', marginBottom: '15px', borderBottom: '1px solid rgba(255,255,255,0.05)', paddingBottom: '10px' }}>Billing & Services</label>
+              <div style={{ display: 'flex', flexDirection: 'column', gap: '10px', marginBottom: '15px' }}>
+                {(editForm.billing?.items || []).map((item, idx) => (
+                  <div key={idx} style={{ display: 'flex', gap: '10px' }}>
+                    <input
+                      type="text"
+                      placeholder="Service name..."
+                      value={item.description}
+                      onChange={(e) => {
+                        const newItems = editForm.billing.items.map((it, i) =>
+                          i === idx ? { ...it, description: e.target.value } : it
+                        );
+                        setEditForm({ ...editForm, billing: { ...editForm.billing, items: newItems } });
+                      }}
+                      style={{ flex: 2, background: 'rgba(255,255,255,0.03)', border: '1px solid rgba(255,255,255,0.1)', borderRadius: '8px', padding: '8px 12px', color: '#fff', fontSize: '0.85rem' }}
+                    />
+                    <input
+                      type="number"
+                      placeholder="Amount"
+                      value={item.amount || ''}
                       onChange={(e) => {
                         const val = e.target.value === '' ? 0 : Number(e.target.value);
-                        setEditForm({ ...editForm, billing: { ...editForm.billing, amountPaid: val } });
+                        const newItems = editForm.billing.items.map((it, i) =>
+                          i === idx ? { ...it, amount: val } : it
+                        );
+                        const total = newItems.reduce((acc, curr) => acc + (curr.amount || 0), 0);
+                        setEditForm({
+                          ...editForm,
+                          budget: `₹${total}`,
+                          billing: { ...editForm.billing, items: newItems, totalAmount: total }
+                        });
                       }}
-                      style={{ width: '100%', background: 'rgba(255,255,255,0.03)', border: '1px solid rgba(255,255,255,0.1)', borderRadius: '10px', padding: '10px', color: '#fff', outline: 'none' }}
+                      style={{ flex: 1, background: 'rgba(255,255,255,0.03)', border: '1px solid rgba(255,255,255,0.1)', borderRadius: '8px', padding: '8px 12px', color: '#fff', fontSize: '0.85rem' }}
                     />
+                    <button
+                      type="button"
+                      onClick={() => {
+                        const newItems = editForm.billing.items.filter((_, i) => i !== idx);
+                        const total = newItems.reduce((acc, curr) => acc + (curr.amount || 0), 0);
+                        setEditForm({
+                          ...editForm,
+                          budget: `₹${total}`,
+                          billing: { ...editForm.billing, items: newItems, totalAmount: total }
+                        });
+                      }}
+                      style={{ background: 'rgba(239, 83, 80, 0.1)', color: '#EF5350', border: 'none', borderRadius: '8px', width: '35px', cursor: 'pointer' }}
+                    >x</button>
                   </div>
+                ))}
+                <button
+                  type="button"
+                  onClick={() => {
+                    const newItems = [...(editForm.billing?.items || []), { description: '', amount: 0 }];
+                    setEditForm({ ...editForm, billing: { ...editForm.billing, items: newItems } });
+                  }}
+                  style={{ background: 'rgba(201,168,76,0.1)', color: '#C9A84C', border: '1px dashed rgba(201,168,76,0.3)', padding: '10px', borderRadius: '12px', cursor: 'pointer', fontSize: '0.8rem', fontWeight: 700 }}
+                >+ Add Service Item</button>
+              </div>
+
+              <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '15px' }}>
+                <div>
+                  <label style={{ display: 'block', fontSize: '0.65rem', color: '#555577', marginBottom: '5px' }}>Total Amount</label>
+                  <div style={{ background: 'rgba(255,255,255,0.05)', padding: '10px', borderRadius: '10px', color: '#fff', fontWeight: 800 }}>₹{editForm.billing?.totalAmount || 0}</div>
+                </div>
+                <div>
+                  <label style={{ display: 'block', fontSize: '0.65rem', color: '#555577', marginBottom: '5px' }}>Amount Paid</label>
+                  <input
+                    type="number"
+                    value={editForm.billing?.amountPaid || ''}
+                    onChange={(e) => {
+                      const val = e.target.value === '' ? 0 : Number(e.target.value);
+                      setEditForm({ ...editForm, billing: { ...editForm.billing, amountPaid: val } });
+                    }}
+                    style={{ width: '100%', background: 'rgba(255,255,255,0.03)', border: '1px solid rgba(255,255,255,0.1)', borderRadius: '10px', padding: '10px', color: '#fff', outline: 'none' }}
+                  />
                 </div>
               </div>
+            </div>
 
             <div style={{ display: 'flex', gap: '15px', marginTop: '30px' }}>
               <button type="submit" style={{ flex: 1, background: '#C9A84C', color: '#000', border: 'none', padding: '12px', borderRadius: '12px', fontWeight: 700, cursor: 'pointer' }}>Save Changes</button>

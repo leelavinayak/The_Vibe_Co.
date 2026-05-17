@@ -7,7 +7,7 @@ const PDFDocument = require('pdfkit');
 // Helper to generate a beautiful PDF in memory
 const generatePDFBuffer = (contact) => {
   return new Promise((resolve, reject) => {
-    const doc = new PDFDocument({ 
+    const doc = new PDFDocument({
       margin: 50,
       size: 'A4',
       info: {
@@ -60,7 +60,7 @@ const generatePDFBuffer = (contact) => {
     addRow('Orchestration Type', contact.eventType);
     addRow('Allocation (Budget)', contact.budget);
     addRow('Execution Date', contact.eventDate ? new Date(contact.eventDate).toLocaleDateString('en-US', { month: 'long', day: 'numeric', year: 'numeric' }) : 'TO BE DETERMINED');
-    
+
     doc.moveDown(1);
     doc.fillColor('#C9A84C').font('Helvetica-Bold').fontSize(11).text('REQUIREMENT BRIEF', { underline: false });
     doc.moveDown(0.5);
@@ -244,7 +244,7 @@ const getPublicStats = async (req, res) => {
     const totalInquiries = await Contact.countDocuments();
     const activeProjects = await Contact.countDocuments({ status: 'in-progress' });
     const happyClients = await Contact.countDocuments({ status: 'completed' });
-    
+
     // Fallback for demo if counts are 0
     res.json({
       totalInquiries: totalInquiries || 150,
@@ -266,10 +266,10 @@ const getMyInquiries = async (req, res) => {
     // Map to include unread count and last message
     const enhancedInquiries = await Promise.all(inquiries.map(async (inq) => {
       const lastMessage = await Message.findOne({ booking: inq._id }).sort({ createdAt: -1 });
-      const unreadCount = await Message.countDocuments({ 
-        booking: inq._id, 
-        receiver: req.user._id, 
-        read: false 
+      const unreadCount = await Message.countDocuments({
+        booking: inq._id,
+        receiver: req.user._id,
+        read: false
       });
       return {
         ...inq._doc,

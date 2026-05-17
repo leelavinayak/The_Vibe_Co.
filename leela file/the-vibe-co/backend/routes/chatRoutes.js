@@ -2,12 +2,28 @@ const express = require('express');
 const router = express.Router();
 const Message = require('../models/Message');
 const Contact = require('../models/Contact');
+const User = require('../models/User');
 const { protect } = require('../middleware/auth');
 
-// Get messages for a booking
+// Get messages for a booking (and any bookings between same user & provider)
 router.get('/:bookingId', protect, async (req, res) => {
   try {
-    const messages = await Message.find({ booking: req.params.bookingId })
+    const currentBooking = await Contact.findById(req.params.bookingId);
+    if (!currentBooking) {
+      return res.status(404).json({ message: 'Booking not found' });
+    }
+
+    let query = { user: currentBooking.user };
+    if (currentBooking.service) {
+      query.service = currentBooking.service;
+    } else {
+      query.service = { $exists: false };
+    }
+
+    const allBookings = await Contact.find(query);
+    const bookingIds = allBookings.map(b => b._id);
+
+    const messages = await Message.find({ booking: { $in: bookingIds } })
       .sort({ createdAt: 1 })
       .populate('sender', 'name role')
       .populate('receiver', 'name role');
@@ -90,8 +106,23 @@ router.delete('/:messageId', protect, async (req, res) => {
 // Mark messages as read
 router.put('/read/:bookingId', protect, async (req, res) => {
   try {
+    const currentBooking = await Contact.findById(req.params.bookingId);
+    if (!currentBooking) {
+      return res.status(404).json({ message: 'Booking not found' });
+    }
+
+    let query = { user: currentBooking.user };
+    if (currentBooking.service) {
+      query.service = currentBooking.service;
+    } else {
+      query.service = { $exists: false };
+    }
+
+    const allBookings = await Contact.find(query);
+    const bookingIds = allBookings.map(b => b._id);
+
     await Message.updateMany(
-      { booking: req.params.bookingId, receiver: req.user._id },
+      { booking: { $in: bookingIds }, receiver: req.user._id },
       { read: true }
     );
     res.json({ message: 'Messages marked as read' });

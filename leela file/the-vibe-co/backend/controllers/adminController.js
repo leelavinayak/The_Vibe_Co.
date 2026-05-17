@@ -24,11 +24,11 @@ const getUserDetails = async (req, res) => {
       return res.status(404).json({ message: 'User not found' });
     }
 
-    const inquiries = await Contact.find({ 
-      $or: [{ user: user._id }, { email: user.email }] 
+    const inquiries = await Contact.find({
+      $or: [{ user: user._id }, { email: user.email }]
     })
-    .populate('service', 'name type city')
-    .sort('-createdAt');
+      .populate('service', 'name type city')
+      .sort('-createdAt');
 
     res.json({
       user,
@@ -70,7 +70,7 @@ const updateUser = async (req, res) => {
 const createUser = async (req, res) => {
   try {
     const { name, email, password, role, phone, state, country, language, gender } = req.body;
-    
+
     const userExists = await User.findOne({ email });
     if (userExists) {
       return res.status(400).json({ message: 'User already exists' });
@@ -114,17 +114,17 @@ const getAllInquiries = async (req, res) => {
       .populate('user', 'name email country language state phone gender')
       .populate('service', 'name type city state images email phone priceStartsFrom instagram')
       .sort('-createdAt');
-      
+
     // Map to include unread count and last message
     const Message = require('../models/Message');
     const enhancedInquiries = await Promise.all(inquiries.map(async (inq) => {
       const lastMessage = await Message.findOne({ booking: inq._id }).sort({ createdAt: -1 });
-      const unreadCount = await Message.countDocuments({ 
-        booking: inq._id, 
-        receiver: req.user._id, 
-        read: false 
+      const unreadCount = await Message.countDocuments({
+        booking: inq._id,
+        receiver: req.user._id,
+        read: false
       });
-      
+
       // Fetch user's event history (excluding the current inquiry/booking)
       let userHistory = [];
       if (inq.user || inq.email) {
@@ -134,7 +134,7 @@ const getAllInquiries = async (req, res) => {
         };
         if (inq.user) historyQuery.$or.push({ user: inq.user._id || inq.user });
         if (inq.email) historyQuery.$or.push({ email: inq.email });
-        
+
         if (historyQuery.$or.length > 0) {
           userHistory = await Contact.find(historyQuery)
             .populate('service', 'name type city state')
@@ -175,7 +175,7 @@ const updateInquiryStatus = async (req, res) => {
       if (req.body.adminNotes !== undefined) inquiry.adminNotes = req.body.adminNotes;
       if (req.body.rejectionReason !== undefined) inquiry.rejectionReason = req.body.rejectionReason;
       if (req.body.billing !== undefined) inquiry.billing = req.body.billing;
-      
+
       const updatedInquiry = await inquiry.save();
 
       // Notify user if budget changed
@@ -183,7 +183,7 @@ const updateInquiryStatus = async (req, res) => {
         const Notification = require('../models/Notification');
         await Notification.create({
           recipient: inquiry.user,
-          type: 'info',
+          type: 'status_update',
           title: 'Budget Updated',
           message: `The budget for your ${inquiry.eventType} booking has been updated to ${inquiry.budget}.`
         });
@@ -195,9 +195,9 @@ const updateInquiryStatus = async (req, res) => {
           const sendEmail = require('../services/emailService');
           const sendWhatsAppMessage = require('../services/whatsappService');
 
-          const statusColor = inquiry.status === 'accepted' ? '#28a745' : 
-                             inquiry.status === 'rejected' ? '#dc3545' : 
-                             inquiry.status === 'completed' ? '#4FC3F7' : '#C9A84C';
+          const statusColor = inquiry.status === 'accepted' ? '#28a745' :
+            inquiry.status === 'rejected' ? '#dc3545' :
+              inquiry.status === 'completed' ? '#4FC3F7' : '#C9A84C';
 
           const isCompleted = inquiry.status === 'completed';
           const isRejected = inquiry.status === 'rejected';
@@ -232,10 +232,10 @@ const updateInquiryStatus = async (req, res) => {
 
           // Send Status Update WhatsApp/SMS
           if (inquiry.phone) {
-            let waMsg = isCompleted 
+            let waMsg = isCompleted
               ? `Hello ${inquiry.name}, your event has been COMPLETED successfully! 🥂 We'd love to hear your feedback on our website and the service member. Please visit your history to leave a review. - THE VIBE CO.`
               : `Hello ${inquiry.name}, your inquiry for ${inquiry.eventType} has been updated to ${inquiry.status.toUpperCase()}. Check your email for more details. - THE VIBE CO.`;
-            
+
             if (isRejected && inquiry.rejectionReason) {
               waMsg = `Hello ${inquiry.name}, your inquiry for ${inquiry.eventType} was unfortunately declined. Reason: ${inquiry.rejectionReason}. Check your email for more details. - THE VIBE CO.`;
             }
@@ -357,8 +357,8 @@ const updateReviewStatus = async (req, res) => {
           const sendEmail = require('../services/emailService');
           const sendWhatsAppMessage = require('../services/whatsappService');
 
-          const statusColor = review.status === 'approved' ? '#28a745' : 
-                             review.status === 'rejected' ? '#dc3545' : '#C9A84C';
+          const statusColor = review.status === 'approved' ? '#28a745' :
+            review.status === 'rejected' ? '#dc3545' : '#C9A84C';
 
           // Send Status Update Email
           await sendEmail({

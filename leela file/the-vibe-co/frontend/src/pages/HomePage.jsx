@@ -607,7 +607,7 @@ const HomePage = () => {
       </AnimatePresence>
 
       {/* ═══════ PARTNERS ═══════ */}
-      <section className="section" style={{ background: '#0a0a0a', borderTop: '1px solid rgba(201,168,76,0.1)' }}>
+      {/* <section className="section" style={{ background: '#0a0a0a', borderTop: '1px solid rgba(201,168,76,0.1)' }}>
         <div className="container">
           <motion.div initial="hidden" whileInView="visible" viewport={{ once: true }} variants={fadeUp} className="section-header" style={{ marginBottom: '40px' }}>
             <span className="section-subtitle">Our Network</span>
@@ -641,7 +641,7 @@ const HomePage = () => {
             ))}
           </motion.div>
         </div>
-      </section>
+      </section> */}
 
       {/* ═══════ CTA ═══════ */}
       <section style={{ position: 'relative', padding: '120px 0', overflow: 'hidden' }}>
