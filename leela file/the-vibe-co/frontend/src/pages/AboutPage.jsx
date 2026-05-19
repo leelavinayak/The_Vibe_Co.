@@ -42,7 +42,7 @@ const AboutPage = () => (
             Crafting <span className="text-gradient">Unforgettable</span> Experiences
           </h2>
           <p style={{ color: '#9999b3', lineHeight: 1.9, marginBottom: '20px' }}>
-            THE VIBE CO. was born from a simple belief: every event should be a masterpiece. Founded in 2018, we've grown from a passionate team of dreamers into one of India's most sought-after event management companies.
+            THE VIBE CO. was born from a simple belief: every event should be a masterpiece. Founded in 2026, we've grown from a passionate team of dreamers into one of India's most sought-after event management companies.
           </p>
           <p style={{ color: '#7a7a99', lineHeight: 1.9, marginBottom: '32px' }}>
             Our approach combines creative vision with meticulous execution. We don't just plan events — we design immersive experiences that engage all senses and create memories that last a lifetime. From the initial spark of an idea to the final applause, we're with you every step of the way.

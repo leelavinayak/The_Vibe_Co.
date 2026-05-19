@@ -27,20 +27,20 @@ const registerUser = async (req, res) => {
       const sendWhatsAppMessage = require('../services/whatsappService');
       const { welcomeTemplate } = require('../utils/premiumTemplates');
 
-      // Send Welcome Email
-      await sendEmail({
+      // Send Welcome Email (Non-blocking background)
+      sendEmail({
         email: user.email,
         subject: 'Welcome to THE VIBE CO. ⚜️',
         message: `Hello ${user.name}, thank you for registering with THE VIBE CO.`,
         html: welcomeTemplate(user.name)
-      });
+      }).catch(err => console.error('Welcome Email background error:', err));
 
-      // Send Welcome WhatsApp/SMS
+      // Send Welcome WhatsApp/SMS (Non-blocking background)
       if (user.phone) {
-        await sendWhatsAppMessage(
+        sendWhatsAppMessage(
           user.phone,
           `Hello ${user.name}, welcome to THE VIBE CO.! Your account has been successfully created. Explore our premium event services now.`
-        );
+        ).catch(err => console.error('Welcome WhatsApp background error:', err));
       }
 
       // Create internal notification

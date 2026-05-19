@@ -14,9 +14,22 @@ const sendWhatsAppMessage = async (phone, message) => {
     if (sid && token) {
       const client = twilio(sid, token);
       
-      // Ensure phone numbers are correctly formatted
-      const toStr = phone.toString().includes('whatsapp:') ? phone : `+${phone.toString().replace(/\D/g, '')}`;
-      const fromStr = fromPhone.toString().includes('whatsapp:') ? fromPhone : `+${fromPhone.toString().replace(/\D/g, '')}`;
+      // Ensure phone numbers are correctly formatted for WhatsApp
+      let toStr = phone.toString().trim();
+      if (!toStr.startsWith('whatsapp:')) {
+        const digits = toStr.replace(/\D/g, '');
+        if (digits.length === 10) {
+          toStr = `whatsapp:+91${digits}`;
+        } else {
+          toStr = `whatsapp:+${digits}`;
+        }
+      }
+      
+      let fromStr = fromPhone.toString().trim();
+      if (!fromStr.startsWith('whatsapp:')) {
+        const digits = fromStr.replace(/\D/g, '');
+        fromStr = `whatsapp:+${digits}`;
+      }
       
       await client.messages.create({
         body: message,

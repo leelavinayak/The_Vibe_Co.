@@ -32,6 +32,7 @@ const ProviderDashboard = () => {
   const [showViewModal, setShowViewModal] = useState(false);
   const [rejectionReason, setRejectionReason] = useState('');
   const [toast, setToast] = useState({ show: false, message: '', type: 'success' });
+  const [updatingStatusId, setUpdatingStatusId] = useState(null);
 
   // Chat state
   const [activeChat, setActiveChat] = useState(null);
@@ -242,6 +243,7 @@ const ProviderDashboard = () => {
 
   const handleUpdateStatus = async (id, status, reason = '') => {
     try {
+      setUpdatingStatusId({ id, status });
       await axios.put(`/api/provider-mgmt/inquiries/${id}`, { status, rejectionReason: reason }, {
         headers: { Authorization: `Bearer ${user.token}` }
       });
@@ -276,6 +278,8 @@ const ProviderDashboard = () => {
       }
     } catch (err) {
       showToast('Update failed', 'error');
+    } finally {
+      setUpdatingStatusId(null);
     }
   };
 
@@ -726,14 +730,23 @@ const ProviderDashboard = () => {
                       {activeChat.status === 'new' && (
                         <div style={{ display: 'flex', gap: '10px' }}>
                           <button
+                            disabled={updatingStatusId !== null}
                             onClick={() => handleUpdateStatus(activeChat._id, 'accepted')}
-                            style={{ flex: 1, background: '#81C784', color: '#000', border: 'none', padding: '12px', borderRadius: '12px', fontWeight: 800, cursor: 'pointer' }}
+                            style={{ flex: 1, background: '#81C784', color: '#000', border: 'none', padding: '12px', borderRadius: '12px', fontWeight: 800, cursor: updatingStatusId ? 'not-allowed' : 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '8px', opacity: updatingStatusId ? 0.7 : 1 }}
                           >
-                            Accept
+                            {updatingStatusId?.id === activeChat._id && updatingStatusId?.status === 'accepted' ? (
+                              <>
+                                <motion.div animate={{ rotate: 360 }} transition={{ repeat: Infinity, duration: 1, ease: 'linear' }} style={{ width: '16px', height: '16px', border: '2px solid rgba(0,0,0,0.1)', borderTopColor: '#000', borderRadius: '50%' }} />
+                                Accepting...
+                              </>
+                            ) : (
+                              'Accept'
+                            )}
                           </button>
                           <button
+                            disabled={updatingStatusId !== null}
                             onClick={() => { setSelectedInq(activeChat); setShowRejectModal(true); }}
-                            style={{ background: 'rgba(239, 83, 80, 0.1)', color: '#EF5350', border: 'none', padding: '12px', borderRadius: '12px', fontWeight: 800, cursor: 'pointer' }}
+                            style={{ background: 'rgba(239, 83, 80, 0.1)', color: '#EF5350', border: 'none', padding: '12px', borderRadius: '12px', fontWeight: 800, cursor: updatingStatusId ? 'not-allowed' : 'pointer', opacity: updatingStatusId ? 0.5 : 1 }}
                           >
                             Reject
                           </button>
@@ -741,10 +754,20 @@ const ProviderDashboard = () => {
                       )}
                       {activeChat.status === 'accepted' && (
                         <button
+                          disabled={updatingStatusId !== null}
                           onClick={() => handleUpdateStatus(activeChat._id, 'completed')}
-                          style={{ width: '100%', background: '#4FC3F7', color: '#000', border: 'none', padding: '15px', borderRadius: '12px', fontWeight: 800, cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '10px' }}
+                          style={{ width: '100%', background: '#4FC3F7', color: '#000', border: 'none', padding: '15px', borderRadius: '12px', fontWeight: 800, cursor: updatingStatusId ? 'not-allowed' : 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '10px', opacity: updatingStatusId ? 0.7 : 1 }}
                         >
-                          <HiCheckCircle size={20} /> Complete & Send Receipt
+                          {updatingStatusId?.id === activeChat._id && updatingStatusId?.status === 'completed' ? (
+                            <>
+                              <motion.div animate={{ rotate: 360 }} transition={{ repeat: Infinity, duration: 1, ease: 'linear' }} style={{ width: '18px', height: '18px', border: '2px solid rgba(0,0,0,0.1)', borderTopColor: '#000', borderRadius: '50%' }} />
+                              Completing...
+                            </>
+                          ) : (
+                            <>
+                              <HiCheckCircle size={20} /> Complete & Send Receipt
+                            </>
+                          )}
                         </button>
                       )}
                       <button
@@ -843,16 +866,38 @@ const ProviderDashboard = () => {
                                 >
                                   {inq.name || 'Guest'}
                                 </div>
-                                <div style={{ color: '#C9A84C', fontSize: '0.75rem', fontWeight: 700, textTransform: 'uppercase', letterSpacing: '1px' }}>{inq.eventType}</div>
+                                <div style={{ color: '#C9A84C', fontSize: '0.75rem', fontWeight: 700, textTransform: 'uppercase', letterSpacing: '1px', marginBottom: '4px' }}>{inq.eventType}</div>
+                                <div style={{ fontSize: '0.75rem', color: '#7a7a99', display: 'flex', flexDirection: 'column', gap: '3px', marginTop: '6px' }}>
+                                  <span>📧 {inq.email}</span>
+                                  {inq.phone && <span>📞 {inq.phone}</span>}
+                                  {inq.user && (
+                                    <div style={{ marginTop: '2px', display: 'flex', gap: '8px', flexWrap: 'wrap', opacity: 0.8 }}>
+                                      {inq.user.state && <span>📍 {inq.user.state}, {inq.user.country || 'IN'}</span>}
+                                      {inq.user.gender && <span>👤 {inq.user.gender?.toUpperCase()}</span>}
+                                    </div>
+                                  )}
+                                </div>
                               </div>
-                              <span style={{
-                                padding: '6px 14px', borderRadius: '10px', fontSize: '0.6rem', fontWeight: 800, textTransform: 'uppercase', letterSpacing: '1px',
-                                background: inq.status === 'accepted' ? 'rgba(129, 199, 132, 0.1)' : inq.status === 'rejected' ? 'rgba(239, 83, 80, 0.1)' : inq.status === 'completed' ? 'rgba(79, 195, 247, 0.1)' : 'rgba(255,255,255,0.05)',
-                                color: inq.status === 'accepted' ? '#81C784' : inq.status === 'rejected' ? '#EF5350' : inq.status === 'completed' ? '#4FC3F7' : '#7a7a99',
-                                border: `1px solid ${inq.status === 'accepted' ? '#81C78430' : inq.status === 'rejected' ? '#EF535030' : inq.status === 'completed' ? '#4FC3F730' : '#ffffff10'}`
-                              }}>
-                                {inq.status}
-                              </span>
+                              <div style={{ display: 'flex', flexDirection: 'column', gap: '5px', alignItems: 'flex-end' }}>
+                                <span style={{
+                                  padding: '6px 14px', borderRadius: '10px', fontSize: '0.6rem', fontWeight: 800, textTransform: 'uppercase', letterSpacing: '1px',
+                                  background: inq.status === 'accepted' ? 'rgba(129, 199, 132, 0.1)' : inq.status === 'rejected' ? 'rgba(239, 83, 80, 0.1)' : inq.status === 'completed' ? 'rgba(79, 195, 247, 0.1)' : 'rgba(255,255,255,0.05)',
+                                  color: inq.status === 'accepted' ? '#81C784' : inq.status === 'rejected' ? '#EF5350' : inq.status === 'completed' ? '#4FC3F7' : '#7a7a99',
+                                  border: `1px solid ${inq.status === 'accepted' ? '#81C78430' : inq.status === 'rejected' ? '#EF535030' : inq.status === 'completed' ? '#4FC3F730' : '#ffffff10'}`
+                                }}>
+                                  {inq.status}
+                                </span>
+                                {inq.status === 'completed' && (
+                                  <span style={{
+                                    padding: '4px 10px', borderRadius: '8px', fontSize: '0.55rem', fontWeight: 800, textTransform: 'uppercase', letterSpacing: '0.5px',
+                                    background: (inq.billing?.totalAmount > 0 && inq.billing?.amountPaid >= inq.billing?.totalAmount) ? 'rgba(129, 199, 132, 0.1)' : 'rgba(239, 83, 80, 0.1)',
+                                    color: (inq.billing?.totalAmount > 0 && inq.billing?.amountPaid >= inq.billing?.totalAmount) ? '#81C784' : '#EF5350',
+                                    border: `1px solid ${(inq.billing?.totalAmount > 0 && inq.billing?.amountPaid >= inq.billing?.totalAmount) ? '#81C78430' : '#EF535030'}`
+                                  }}>
+                                    {(inq.billing?.totalAmount > 0 && inq.billing?.amountPaid >= inq.billing?.totalAmount) ? 'Paid' : 'Unpaid'}
+                                  </span>
+                                )}
+                              </div>
                             </div>
 
                             <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '20px', marginBottom: '25px', position: 'relative', zIndex: 1 }}>
@@ -864,11 +909,21 @@ const ProviderDashboard = () => {
                                 </div>
                               </div>
                               <div style={{ fontSize: '0.85rem' }}>
-                                <div style={{ color: '#555577', textTransform: 'uppercase', fontSize: '0.6rem', letterSpacing: '1.5px', marginBottom: '6px', fontWeight: 700 }}>Service Fee</div>
-                                <div style={{ color: '#eee', display: 'flex', alignItems: 'center', gap: '6px' }}>
-                                  <HiBadgeCheck size={14} color="#C9A84C" />
-                                  {inq.billing?.totalAmount ? `₹${inq.billing.totalAmount}` : (inq.budget || 'N/A')}
-                                </div>
+                                <div style={{ color: '#555577', textTransform: 'uppercase', fontSize: '0.6rem', letterSpacing: '1.5px', marginBottom: '6px', fontWeight: 700 }}>Payment Details</div>
+                                {inq.billing?.totalAmount > 0 ? (
+                                  <div style={{ display: 'flex', flexDirection: 'column', gap: '2px', color: '#eee', fontSize: '0.75rem', borderLeft: '2px solid rgba(201,168,76,0.2)', paddingLeft: '6px' }}>
+                                    <div style={{ display: 'flex', alignItems: 'center', gap: '4px', color: '#81C784', fontWeight: 600 }}>
+                                      Fee: ₹{inq.billing.totalAmount}
+                                    </div>
+                                    <div style={{ color: '#C9A84C' }}>Paid: ₹{inq.billing.amountPaid || 0}</div>
+                                    <div style={{ color: '#EF5350', fontWeight: 600 }}>Due: ₹{Math.max(0, inq.billing.totalAmount - (inq.billing.amountPaid || 0))}</div>
+                                  </div>
+                                ) : (
+                                  <div style={{ color: '#eee', display: 'flex', alignItems: 'center', gap: '6px' }}>
+                                    <HiBadgeCheck size={14} color="#C9A84C" />
+                                    {inq.budget || 'N/A'}
+                                  </div>
+                                )}
                               </div>
                             </div>
 
@@ -878,12 +933,46 @@ const ProviderDashboard = () => {
                                 <div style={{ display: 'flex', gap: '10px', width: '100%' }}>
                                   {inq.status === 'new' && (
                                     <>
-                                      <button onClick={(e) => { e.stopPropagation(); handleUpdateStatus(inq._id, 'accepted'); }} style={{ flex: 1, background: '#81C784', color: '#000', border: 'none', padding: '12px 16px', borderRadius: '14px', fontWeight: 800, cursor: 'pointer', fontSize: '0.85rem', boxShadow: '0 4px 12px rgba(129, 199, 132, 0.2)', transition: '0.2s' }}>Accept</button>
-                                      <button onClick={(e) => { e.stopPropagation(); setSelectedInq(inq); setShowRejectModal(true); }} style={{ flex: 1, background: 'rgba(239, 83, 80, 0.1)', color: '#EF5350', border: '1px solid #EF535030', padding: '12px 16px', borderRadius: '14px', fontWeight: 800, cursor: 'pointer', fontSize: '0.85rem', transition: '0.2s' }}>Reject</button>
+                                      <button
+                                        disabled={updatingStatusId !== null}
+                                        onClick={(e) => { e.stopPropagation(); handleUpdateStatus(inq._id, 'accepted'); }}
+                                        style={{ flex: 1, background: '#81C784', color: '#000', border: 'none', padding: '12px 16px', borderRadius: '14px', fontWeight: 800, cursor: updatingStatusId ? 'not-allowed' : 'pointer', fontSize: '0.85rem', boxShadow: '0 4px 12px rgba(129, 199, 132, 0.2)', transition: '0.2s', display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '6px', opacity: updatingStatusId ? 0.7 : 1 }}
+                                      >
+                                        {updatingStatusId?.id === inq._id && updatingStatusId?.status === 'accepted' ? (
+                                          <>
+                                            <motion.div animate={{ rotate: 360 }} transition={{ repeat: Infinity, duration: 1, ease: 'linear' }} style={{ width: '14px', height: '14px', border: '2px solid rgba(0,0,0,0.1)', borderTopColor: '#000', borderRadius: '50%' }} />
+                                            Accepting...
+                                          </>
+                                        ) : (
+                                          'Accept'
+                                        )}
+                                      </button>
+                                      <button
+                                        disabled={updatingStatusId !== null}
+                                        onClick={(e) => { e.stopPropagation(); setSelectedInq(inq); setShowRejectModal(true); }}
+                                        style={{ flex: 1, background: 'rgba(239, 83, 80, 0.1)', color: '#EF5350', border: '1px solid #EF535030', padding: '12px 16px', borderRadius: '14px', fontWeight: 800, cursor: updatingStatusId ? 'not-allowed' : 'pointer', fontSize: '0.85rem', transition: '0.2s', opacity: updatingStatusId ? 0.5 : 1 }}
+                                      >
+                                        Reject
+                                      </button>
                                     </>
                                   )}
                                   {inq.status === 'accepted' && (
-                                    <button onClick={(e) => { e.stopPropagation(); handleUpdateStatus(inq._id, 'completed'); }} style={{ flex: 1, background: 'linear-gradient(45deg, #4FC3F7, #29B6F6)', color: '#000', border: 'none', padding: '12px 16px', borderRadius: '14px', fontWeight: 800, cursor: 'pointer', fontSize: '0.85rem', display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '6px', boxShadow: '0 4px 15px rgba(79, 195, 247, 0.3)', transition: '0.2s' }}><HiCheckCircle size={18} /> Complete Job</button>
+                                    <button
+                                      disabled={updatingStatusId !== null}
+                                      onClick={(e) => { e.stopPropagation(); handleUpdateStatus(inq._id, 'completed'); }}
+                                      style={{ flex: 1, background: 'linear-gradient(45deg, #4FC3F7, #29B6F6)', color: '#000', border: 'none', padding: '12px 16px', borderRadius: '14px', fontWeight: 800, cursor: updatingStatusId ? 'not-allowed' : 'pointer', fontSize: '0.85rem', display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '6px', boxShadow: '0 4px 15px rgba(79, 195, 247, 0.3)', transition: '0.2s', opacity: updatingStatusId ? 0.7 : 1 }}
+                                    >
+                                      {updatingStatusId?.id === inq._id && updatingStatusId?.status === 'completed' ? (
+                                        <>
+                                          <motion.div animate={{ rotate: 360 }} transition={{ repeat: Infinity, duration: 1, ease: 'linear' }} style={{ width: '14px', height: '14px', border: '2px solid rgba(0,0,0,0.1)', borderTopColor: '#000', borderRadius: '50%' }} />
+                                          Completing...
+                                        </>
+                                      ) : (
+                                        <>
+                                          <HiCheckCircle size={18} /> Complete Job
+                                        </>
+                                      )}
+                                    </button>
                                   )}
                                 </div>
                               )}
@@ -948,38 +1037,94 @@ const ProviderDashboard = () => {
                                 </div>
                                 <div style={{ fontSize: '0.8rem', color: '#C9A84C' }}>{inq.email}</div>
                                 {inq.phone && <div style={{ fontSize: '0.75rem', color: '#7a7a99', marginTop: '4px' }}>{inq.phone}</div>}
+                                {inq.user && (
+                                  <div style={{ fontSize: '0.7rem', color: '#7a7a99', marginTop: '4px', display: 'flex', gap: '8px', flexWrap: 'wrap', opacity: 0.8 }}>
+                                    {inq.user.state && <span>📍 {inq.user.state}, {inq.user.country || 'IN'}</span>}
+                                    {inq.user.gender && <span>👤 {inq.user.gender?.toUpperCase()}</span>}
+                                  </div>
+                                )}
                               </td>
                               <td style={{ padding: '20px 24px' }}>
                                 <div style={{ display: 'flex', alignItems: 'center', gap: '8px', color: '#7a7a99', fontSize: '0.9rem' }}>
                                   <HiCalendar size={14} /> {inq.eventDate ? new Date(inq.eventDate).toLocaleDateString() : 'TBD'}
                                 </div>
                                 <div style={{ fontSize: '0.8rem', color: '#C9A84C', marginTop: '4px' }}>{inq.eventType}</div>
-                                {inq.billing?.totalAmount ? (
-                                  <div style={{ fontSize: '0.75rem', color: '#81C784', marginTop: '4px', fontWeight: 600 }}>Total Cost: ₹{inq.billing.totalAmount}</div>
+                                {inq.billing?.totalAmount > 0 ? (
+                                  <div style={{ fontSize: '0.7rem', marginTop: '6px', display: 'flex', flexDirection: 'column', gap: '2px', borderLeft: '2px solid rgba(201,168,76,0.2)', paddingLeft: '8px' }}>
+                                    <div style={{ color: '#81C784', fontWeight: 600 }}>Total Cost: ₹{inq.billing.totalAmount}</div>
+                                    <div style={{ color: '#C9A84C', fontWeight: 600 }}>Paid Advance: ₹{inq.billing.amountPaid || 0}</div>
+                                    <div style={{ color: '#EF5350', fontWeight: 700 }}>Pending Amount: ₹{Math.max(0, inq.billing.totalAmount - (inq.billing.amountPaid || 0))}</div>
+                                  </div>
                                 ) : (
                                   inq.budget && <div style={{ fontSize: '0.75rem', color: '#C9A84C', marginTop: '4px', fontWeight: 600 }}>Estimated Budget: {inq.budget}</div>
                                 )}
                               </td>
                               <td style={{ padding: '20px 24px' }}>
-                                <span style={{
-                                  padding: '6px 12px', borderRadius: '8px', fontSize: '0.7rem', fontWeight: 700, textTransform: 'uppercase',
-                                  background: inq.status === 'accepted' ? 'rgba(129, 199, 132, 0.1)' : inq.status === 'rejected' ? 'rgba(239, 83, 80, 0.1)' : inq.status === 'completed' ? 'rgba(79, 195, 247, 0.1)' : 'rgba(255,255,255,0.05)',
-                                  color: inq.status === 'accepted' ? '#81C784' : inq.status === 'rejected' ? '#EF5350' : inq.status === 'completed' ? '#4FC3F7' : '#7a7a99',
-                                  border: `1px solid ${inq.status === 'accepted' ? '#81C78430' : inq.status === 'rejected' ? '#EF535030' : inq.status === 'completed' ? '#4FC3F730' : '#ffffff10'}`
-                                }}>
-                                  {inq.status}
-                                </span>
+                                <div style={{ display: 'flex', gap: '8px', alignItems: 'center', flexWrap: 'wrap' }}>
+                                  <span style={{
+                                    padding: '6px 12px', borderRadius: '8px', fontSize: '0.7rem', fontWeight: 700, textTransform: 'uppercase',
+                                    background: inq.status === 'accepted' ? 'rgba(129, 199, 132, 0.1)' : inq.status === 'rejected' ? 'rgba(239, 83, 80, 0.1)' : inq.status === 'completed' ? 'rgba(79, 195, 247, 0.1)' : 'rgba(255,255,255,0.05)',
+                                    color: inq.status === 'accepted' ? '#81C784' : inq.status === 'rejected' ? '#EF5350' : inq.status === 'completed' ? '#4FC3F7' : '#7a7a99',
+                                    border: `1px solid ${inq.status === 'accepted' ? '#81C78430' : inq.status === 'rejected' ? '#EF535030' : inq.status === 'completed' ? '#4FC3F730' : '#ffffff10'}`
+                                  }}>
+                                    {inq.status}
+                                  </span>
+                                  {inq.status === 'completed' && (
+                                    <span style={{
+                                      padding: '6px 12px', borderRadius: '8px', fontSize: '0.7rem', fontWeight: 700, textTransform: 'uppercase',
+                                      background: (inq.billing?.totalAmount > 0 && inq.billing?.amountPaid >= inq.billing?.totalAmount) ? 'rgba(129, 199, 132, 0.1)' : 'rgba(239, 83, 80, 0.1)',
+                                      color: (inq.billing?.totalAmount > 0 && inq.billing?.amountPaid >= inq.billing?.totalAmount) ? '#81C784' : '#EF5350',
+                                      border: `1px solid ${(inq.billing?.totalAmount > 0 && inq.billing?.amountPaid >= inq.billing?.totalAmount) ? '#81C78430' : '#EF535030'}`
+                                    }}>
+                                      {(inq.billing?.totalAmount > 0 && inq.billing?.amountPaid >= inq.billing?.totalAmount) ? 'Paid' : 'Unpaid'}
+                                    </span>
+                                  )}
+                                </div>
                               </td>
                               <td style={{ padding: '20px 24px', borderRadius: '0 16px 16px 0', textAlign: 'right' }}>
                                 <div style={{ display: 'flex', gap: '10px', justifyContent: 'flex-end' }}>
                                   {inq.status === 'new' && (
                                     <>
-                                      <button onClick={(e) => { e.stopPropagation(); handleUpdateStatus(inq._id, 'accepted'); }} style={{ background: '#81C784', color: '#000', border: 'none', padding: '8px 16px', borderRadius: '8px', fontWeight: 700, cursor: 'pointer' }}>Accept</button>
-                                      <button onClick={(e) => { e.stopPropagation(); setSelectedInq(inq); setShowRejectModal(true); }} style={{ background: 'rgba(239, 83, 80, 0.1)', color: '#EF5350', border: '1px solid #EF535030', padding: '8px 16px', borderRadius: '8px', fontWeight: 700, cursor: 'pointer' }}>Reject</button>
+                                      <button
+                                        disabled={updatingStatusId !== null}
+                                        onClick={(e) => { e.stopPropagation(); handleUpdateStatus(inq._id, 'accepted'); }}
+                                        style={{ background: '#81C784', color: '#000', border: 'none', padding: '8px 16px', borderRadius: '8px', fontWeight: 700, cursor: updatingStatusId ? 'not-allowed' : 'pointer', display: 'flex', alignItems: 'center', gap: '6px', opacity: updatingStatusId ? 0.7 : 1 }}
+                                      >
+                                        {updatingStatusId?.id === inq._id && updatingStatusId?.status === 'accepted' ? (
+                                          <>
+                                            <motion.div animate={{ rotate: 360 }} transition={{ repeat: Infinity, duration: 1, ease: 'linear' }} style={{ width: '12px', height: '12px', border: '2px solid rgba(0,0,0,0.1)', borderTopColor: '#000', borderRadius: '50%' }} />
+                                            Accepting...
+                                          </>
+                                        ) : (
+                                          'Accept'
+                                        )}
+                                      </button>
+                                      <button
+                                        disabled={updatingStatusId !== null}
+                                        onClick={(e) => { e.stopPropagation(); setSelectedInq(inq); setShowRejectModal(true); }}
+                                        style={{ background: 'rgba(239, 83, 80, 0.1)', color: '#EF5350', border: '1px solid #EF535030', padding: '8px 16px', borderRadius: '8px', fontWeight: 700, cursor: updatingStatusId ? 'not-allowed' : 'pointer', opacity: updatingStatusId ? 0.5 : 1 }}
+                                      >
+                                        Reject
+                                      </button>
                                     </>
                                   )}
                                   {inq.status === 'accepted' && (
-                                    <button onClick={(e) => { e.stopPropagation(); handleUpdateStatus(inq._id, 'completed'); }} style={{ background: '#4FC3F7', color: '#000', border: 'none', padding: '8px 16px', borderRadius: '8px', fontWeight: 800, cursor: 'pointer', display: 'flex', alignItems: 'center', gap: '5px' }}><HiCheckCircle /> Complete</button>
+                                    <button
+                                      disabled={updatingStatusId !== null}
+                                      onClick={(e) => { e.stopPropagation(); handleUpdateStatus(inq._id, 'completed'); }}
+                                      style={{ background: '#4FC3F7', color: '#000', border: 'none', padding: '8px 16px', borderRadius: '8px', fontWeight: 800, cursor: updatingStatusId ? 'not-allowed' : 'pointer', display: 'flex', alignItems: 'center', gap: '5px', opacity: updatingStatusId ? 0.7 : 1 }}
+                                    >
+                                      {updatingStatusId?.id === inq._id && updatingStatusId?.status === 'completed' ? (
+                                        <>
+                                          <motion.div animate={{ rotate: 360 }} transition={{ repeat: Infinity, duration: 1, ease: 'linear' }} style={{ width: '12px', height: '12px', border: '2px solid rgba(0,0,0,0.1)', borderTopColor: '#000', borderRadius: '50%' }} />
+                                          Completing...
+                                        </>
+                                      ) : (
+                                        <>
+                                          <HiCheckCircle /> Complete
+                                        </>
+                                      )}
+                                    </button>
                                   )}
                                   {(inq.status === 'accepted' || inq.status === 'new') && (
                                     <button onClick={(e) => { e.stopPropagation(); setActiveChat(inq); setActiveTab('chat'); }} style={{ background: 'rgba(201,168,76,0.1)', color: '#C9A84C', border: '1px solid rgba(201,168,76,0.3)', padding: '8px 16px', borderRadius: '8px', fontWeight: 700, cursor: 'pointer', display: 'flex', alignItems: 'center', gap: '5px' }}><HiChatAlt2 /> Chat</button>
@@ -1079,10 +1224,10 @@ const ProviderDashboard = () => {
                   <DetailBlock label="Registered Email" value={selectedInq.user.email} icon={<HiMail />} />
                   {selectedInq.user.phone && <DetailBlock label="Registered Phone" value={selectedInq.user.phone} icon={<HiPhone />} />}
                   {selectedInq.user.gender && <DetailBlock label="Gender" value={selectedInq.user.gender?.toUpperCase()} icon={<HiUserCircle />} />}
-                  {(selectedInq.user.state || selectedInq.user.country) && (
+                  {(selectedInq.user.city || selectedInq.user.state || selectedInq.user.country) && (
                     <DetailBlock
-                      label="Location"
-                      value={`${selectedInq.user.state || ''}${selectedInq.user.state && selectedInq.user.country ? ', ' : ''}${selectedInq.user.country || ''}`}
+                      label="Registered Location"
+                      value={`${selectedInq.user.city ? selectedInq.user.city + ', ' : ''}${selectedInq.user.state || ''}${selectedInq.user.state && selectedInq.user.country ? ', ' : ''}${selectedInq.user.country || ''}`}
                       icon={<HiLocationMarker />}
                     />
                   )}
@@ -1091,27 +1236,77 @@ const ProviderDashboard = () => {
               </div>
             )}
 
-            <div style={{ marginTop: '30px', background: 'rgba(0,0,0,0.2)', padding: '25px', borderRadius: '20px', border: '1px solid rgba(255,255,255,0.03)' }}>
-              <span style={{ fontSize: '0.7rem', color: '#555577', textTransform: 'uppercase', display: 'block', marginBottom: '15px', borderBottom: '1px solid rgba(255,255,255,0.05)', paddingBottom: '10px' }}>Billing Summary</span>
-              {(selectedInq.billing?.items || []).length > 0 ? (
-                <div style={{ display: 'flex', flexDirection: 'column', gap: '10px' }}>
-                  {selectedInq.billing.items.map((item, i) => (
-                    <div key={i} style={{ display: 'flex', justifyContent: 'space-between', fontSize: '0.9rem' }}>
-                      <span style={{ color: '#7a7a99' }}>{item.description}</span>
-                      <span style={{ color: '#fff', fontWeight: 600 }}>₹{item.amount}</span>
-                    </div>
-                  ))}
-                  <div style={{ marginTop: '10px', paddingTop: '10px', borderTop: '1px solid rgba(255,255,255,0.05)', display: 'flex', justifyContent: 'space-between' }}>
-                    <span style={{ color: '#C9A84C', fontWeight: 800 }}>Total Cost</span>
-                    <span style={{ color: '#C9A84C', fontWeight: 800 }}>₹{selectedInq.billing.totalAmount}</span>
-                  </div>
-                  <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: '0.85rem' }}>
-                    <span style={{ color: '#81C784' }}>Amount Paid</span>
-                    <span style={{ color: '#81C784' }}>₹{selectedInq.billing.amountPaid}</span>
+            <div style={{ 
+              marginTop: '30px', 
+              background: 'linear-gradient(135deg, rgba(201, 168, 76, 0.05), rgba(255, 255, 255, 0.01))', 
+              padding: '25px', 
+              borderRadius: '24px', 
+              border: '1px solid rgba(201,168,76,0.15)',
+              boxShadow: '0 8px 32px rgba(0,0,0,0.3)'
+            }}>
+              <div style={{
+                color: '#C9A84C',
+                fontSize: '0.75rem',
+                textTransform: 'uppercase',
+                letterSpacing: '2px',
+                fontWeight: 700,
+                marginBottom: '20px',
+                borderBottom: '1px solid rgba(201, 168, 76, 0.15)',
+                paddingBottom: '8px',
+                display: 'flex',
+                alignItems: 'center',
+                justifyContent: 'space-between'
+              }}>
+                <span style={{ display: 'flex', alignItems: 'center', gap: '8px' }}><HiClipboardList /> Financial Dossier & Payment Summary</span>
+                <span style={{
+                  padding: '4px 10px',
+                  borderRadius: '8px',
+                  fontSize: '0.65rem',
+                  fontWeight: 900,
+                  textTransform: 'uppercase',
+                  background: (Number(selectedInq.billing?.totalAmount) > 0 && Number(selectedInq.billing?.amountPaid) >= Number(selectedInq.billing?.totalAmount)) ? 'rgba(76, 175, 80, 0.15)' : 'rgba(239, 83, 80, 0.15)',
+                  color: (Number(selectedInq.billing?.totalAmount) > 0 && Number(selectedInq.billing?.amountPaid) >= Number(selectedInq.billing?.totalAmount)) ? '#81C784' : '#EF5350',
+                  border: `1px solid ${(Number(selectedInq.billing?.totalAmount) > 0 && Number(selectedInq.billing?.amountPaid) >= Number(selectedInq.billing?.totalAmount)) ? 'rgba(76,175,80,0.3)' : 'rgba(239,83,80,0.3)'}`
+                }}>
+                  {(Number(selectedInq.billing?.totalAmount) > 0 && Number(selectedInq.billing?.amountPaid) >= Number(selectedInq.billing?.totalAmount)) ? 'Paid' : 'Unpaid'}
+                </span>
+              </div>
+
+              <div style={{ display: 'grid', gridTemplateColumns: isMobile ? '1fr' : '1fr 1fr 1fr', gap: '20px', marginBottom: '20px' }}>
+                <div style={{ background: 'rgba(255,255,255,0.02)', padding: '15px', borderRadius: '16px', border: '1px solid rgba(255,255,255,0.05)' }}>
+                  <span style={{ fontSize: '0.65rem', color: '#555577', textTransform: 'uppercase', display: 'block', marginBottom: '4px' }}>Estimated Budget</span>
+                  <span style={{ fontSize: '1.1rem', fontWeight: 700, color: '#eee' }}>₹{selectedInq.budget || 'N/A'}</span>
+                </div>
+                <div style={{ background: 'rgba(201,168,76,0.05)', padding: '15px', borderRadius: '16px', border: '1px solid rgba(201,168,76,0.1)' }}>
+                  <span style={{ fontSize: '0.65rem', color: '#C9A84C', textTransform: 'uppercase', display: 'block', marginBottom: '4px' }}>Total Cost</span>
+                  <span style={{ fontSize: '1.1rem', fontWeight: 700, color: '#C9A84C' }}>₹{selectedInq.billing?.totalAmount || 0}</span>
+                </div>
+                <div style={{ background: 'rgba(129, 199, 132, 0.05)', padding: '15px', borderRadius: '16px', border: '1px solid rgba(129, 199, 132, 0.1)' }}>
+                  <span style={{ fontSize: '0.65rem', color: '#81C784', textTransform: 'uppercase', display: 'block', marginBottom: '4px' }}>Advance Paid Amount</span>
+                  <span style={{ fontSize: '1.1rem', fontWeight: 700, color: '#81C784' }}>₹{selectedInq.billing?.amountPaid || 0}</span>
+                </div>
+              </div>
+
+              <div style={{ background: 'rgba(239, 83, 80, 0.05)', border: '1px solid rgba(239, 83, 80, 0.15)', padding: '15px 20px', borderRadius: '16px', display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '20px' }}>
+                <span style={{ fontSize: '0.75rem', color: '#EF5350', textTransform: 'uppercase', letterSpacing: '1px', fontWeight: 600 }}>Unpaid / Remaining Balance</span>
+                <span style={{ fontSize: '1.2rem', fontWeight: 800, color: '#EF5350' }}>
+                  ₹{Math.max(0, (Number(selectedInq.billing?.totalAmount) || 0) - (Number(selectedInq.billing?.amountPaid) || 0))}
+                </span>
+              </div>
+
+              {/* Itemized list if exists */}
+              {(selectedInq.billing?.items || []).length > 0 && (
+                <div style={{ marginTop: '15px', background: 'rgba(0,0,0,0.15)', padding: '15px', borderRadius: '16px' }}>
+                  <span style={{ fontSize: '0.65rem', color: '#555577', textTransform: 'uppercase', display: 'block', marginBottom: '10px' }}>Itemized Billing Breakdown</span>
+                  <div style={{ display: 'flex', flexDirection: 'column', gap: '8px' }}>
+                    {selectedInq.billing.items.map((item, i) => (
+                      <div key={i} style={{ display: 'flex', justifyContent: 'space-between', fontSize: '0.85rem' }}>
+                        <span style={{ color: '#7a7a99' }}>{item.description}</span>
+                        <span style={{ color: '#fff', fontWeight: 600 }}>₹{item.amount}</span>
+                      </div>
+                    ))}
                   </div>
                 </div>
-              ) : (
-                <p style={{ color: '#555577', fontSize: '0.85rem', margin: 0 }}>No billing items added yet.</p>
               )}
             </div>
 
@@ -1297,15 +1492,16 @@ const ProviderDashboard = () => {
                   >+ Add Service Item</button>
                 </div>
 
-                <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '15px', marginTop: 'auto', borderTop: '1px solid rgba(255,255,255,0.05)', paddingTop: '15px' }}>
-                  <div>
+                <div style={{ display: 'grid', gridTemplateColumns: isMobile ? '1fr 1fr' : '1fr 1fr 1fr', gap: '15px', marginTop: 'auto', borderTop: '1px solid rgba(255,255,255,0.05)', paddingTop: '15px' }}>
+                  <div style={{ gridColumn: isMobile ? 'span 2' : 'span 1' }}>
                     <label style={{ display: 'block', fontSize: '0.65rem', color: '#555577', marginBottom: '5px', fontWeight: 700 }}>Total Amount</label>
                     <div style={{ background: 'rgba(255,255,255,0.05)', padding: '12px', borderRadius: '10px', color: '#fff', fontWeight: 800 }}>₹{editForm.billing?.totalAmount || 0}</div>
                   </div>
                   <div>
-                    <label style={{ display: 'block', fontSize: '0.65rem', color: '#555577', marginBottom: '5px', fontWeight: 700 }}>Amount Paid</label>
+                    <label style={{ display: 'block', fontSize: '0.65rem', color: '#C9A84C', marginBottom: '5px', fontWeight: 700 }}>Paid Advance</label>
                     <input
                       type="number"
+                      placeholder="Advance paid..."
                       value={editForm.billing?.amountPaid || ''}
                       onChange={(e) => {
                         const val = e.target.value === '' ? 0 : Number(e.target.value);
@@ -1313,6 +1509,19 @@ const ProviderDashboard = () => {
                       }}
                       style={{ width: '100%', background: 'rgba(255,255,255,0.03)', border: '1px solid rgba(255,255,255,0.1)', borderRadius: '10px', padding: '11px 12px', color: '#fff', outline: 'none' }}
                     />
+                  </div>
+                  <div>
+                    <label style={{ display: 'block', fontSize: '0.65rem', color: '#EF5350', marginBottom: '5px', fontWeight: 700 }}>Remaining Balance</label>
+                    <div style={{ 
+                      background: 'rgba(239, 83, 80, 0.05)', 
+                      border: '1px solid rgba(239, 83, 80, 0.1)', 
+                      padding: '12px', 
+                      borderRadius: '10px', 
+                      color: Math.max(0, (editForm.billing?.totalAmount || 0) - (editForm.billing?.amountPaid || 0)) <= 0 ? '#81C784' : '#EF5350', 
+                      fontWeight: 800 
+                    }}>
+                      ₹{Math.max(0, (editForm.billing?.totalAmount || 0) - (editForm.billing?.amountPaid || 0))}
+                    </div>
                   </div>
                 </div>
               </div>
@@ -1439,15 +1648,24 @@ const ProviderDashboard = () => {
                   <div style={{ display: 'flex', gap: '10px' }}>
                     <button
                       type="button"
+                      disabled={updatingStatusId !== null}
                       onClick={() => { handleUpdateStatus(activeChat._id, 'accepted'); setShowMobileDossier(false); }}
-                      style={{ flex: 1, background: '#81C784', color: '#000', border: 'none', padding: '12px', borderRadius: '12px', fontWeight: 800, cursor: 'pointer' }}
+                      style={{ flex: 1, background: '#81C784', color: '#000', border: 'none', padding: '12px', borderRadius: '12px', fontWeight: 800, cursor: updatingStatusId ? 'not-allowed' : 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '6px', opacity: updatingStatusId ? 0.7 : 1 }}
                     >
-                      Accept
+                      {updatingStatusId?.id === activeChat._id && updatingStatusId?.status === 'accepted' ? (
+                        <>
+                          <motion.div animate={{ rotate: 360 }} transition={{ repeat: Infinity, duration: 1, ease: 'linear' }} style={{ width: '14px', height: '14px', border: '2px solid rgba(0,0,0,0.1)', borderTopColor: '#000', borderRadius: '50%' }} />
+                          Accepting...
+                        </>
+                      ) : (
+                        'Accept'
+                      )}
                     </button>
                     <button
                       type="button"
+                      disabled={updatingStatusId !== null}
                       onClick={() => { setSelectedInq(activeChat); setShowRejectModal(true); setShowMobileDossier(false); }}
-                      style={{ flex: 1, background: 'rgba(239, 83, 80, 0.1)', color: '#EF5350', border: 'none', padding: '12px', borderRadius: '12px', fontWeight: 800, cursor: 'pointer' }}
+                      style={{ flex: 1, background: 'rgba(239, 83, 80, 0.1)', color: '#EF5350', border: 'none', padding: '12px', borderRadius: '12px', fontWeight: 800, cursor: updatingStatusId ? 'not-allowed' : 'pointer', opacity: updatingStatusId ? 0.5 : 1 }}
                     >
                       Reject
                     </button>
@@ -1456,10 +1674,20 @@ const ProviderDashboard = () => {
                 {activeChat.status === 'accepted' && (
                   <button
                     type="button"
+                    disabled={updatingStatusId !== null}
                     onClick={() => { handleUpdateStatus(activeChat._id, 'completed'); setShowMobileDossier(false); }}
-                    style={{ width: '100%', background: '#4FC3F7', color: '#000', border: 'none', padding: '15px', borderRadius: '12px', fontWeight: 800, cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '10px' }}
+                    style={{ width: '100%', background: '#4FC3F7', color: '#000', border: 'none', padding: '15px', borderRadius: '12px', fontWeight: 800, cursor: updatingStatusId ? 'not-allowed' : 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '10px', opacity: updatingStatusId ? 0.7 : 1 }}
                   >
-                    <HiCheckCircle size={20} /> Complete & Send Receipt
+                    {updatingStatusId?.id === activeChat._id && updatingStatusId?.status === 'completed' ? (
+                      <>
+                        <motion.div animate={{ rotate: 360 }} transition={{ repeat: Infinity, duration: 1, ease: 'linear' }} style={{ width: '14px', height: '14px', border: '2px solid rgba(0,0,0,0.1)', borderTopColor: '#000', borderRadius: '50%' }} />
+                        Completing...
+                      </>
+                    ) : (
+                      <>
+                        <HiCheckCircle size={20} /> Complete & Send Receipt
+                      </>
+                    )}
                   </button>
                 )}
                 <button

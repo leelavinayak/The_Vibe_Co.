@@ -81,6 +81,22 @@ export const AuthProvider = ({ children }) => {
     window.location.href = '/login'; // Hard redirect to clear all states
   };
 
+  useEffect(() => {
+    const interceptor = axios.interceptors.response.use(
+      (response) => response,
+      (error) => {
+        if (error.response && error.response.status === 401) {
+          console.warn('Session expired or unauthorized! Logging out...');
+          logout();
+        }
+        return Promise.reject(error);
+      }
+    );
+    return () => {
+      axios.interceptors.response.eject(interceptor);
+    };
+  }, []);
+
   const forgotPassword = async (email) => {
     try {
       await axios.post('/api/auth/forgotpassword', { email });

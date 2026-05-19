@@ -81,7 +81,7 @@ const applyAsProvider = async (req, res) => {
 // @route   GET /api/providers/applications
 const getApplications = async (req, res) => {
   try {
-    const applications = await ProviderApplication.find().sort('-createdAt');
+    const applications = await ProviderApplication.find({ status: { $ne: 'accepted' } }).sort('-createdAt');
     res.json(applications);
   } catch (error) {
     res.status(500).json({ success: false, message: error.message });

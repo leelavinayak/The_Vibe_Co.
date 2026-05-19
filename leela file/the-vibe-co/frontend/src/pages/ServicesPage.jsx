@@ -16,8 +16,8 @@ const categories = [
   { id: 'videography', name: 'Videography', icon: <HiCamera />, color: '#C9A84C' },
   { id: 'catering', name: 'Catering', icon: <HiCake />, color: '#C9A84C' },
   { id: 'decoration', name: 'Decoration', icon: <HiColorSwatch />, color: '#C9A84C' },
-  { id: 'music', name: 'Music', icon: <HiCube />, color: '#C9A84C' },
-  { id: 'security', name: 'Security', icon: <HiCube />, color: '#C9A84C' },
+  // { id: 'music', name: 'Music', icon: <HiCube />, color: '#C9A84C' },
+  // { id: 'security', name: 'Security', icon: <HiCube />, color: '#C9A84C' },
   { id: 'total_event_organisation', name: 'Total Event Organisation', icon: <HiCube />, color: '#C9A84C' },
 ];
 
@@ -136,12 +136,20 @@ const ServicesPage = () => {
       navigate('/login');
       return;
     }
+    if (user.role === 'provider') {
+      alert("Service member cannot book the service. They need to book with their personal accounts like as a user.");
+      return;
+    }
     navigate(`/contact?service=${service.type}&provider=${service.name}&serviceId=${service._id}&mode=enquiry`);
   };
 
   const handleBooking = (service) => {
     if (!user) {
       navigate('/login');
+      return;
+    }
+    if (user.role === 'provider') {
+      alert("Service member cannot book the service. They need to book with their personal accounts like as a user.");
       return;
     }
     navigate(`/contact?service=${service.type}&provider=${service.name}&serviceId=${service._id}&mode=booking`);

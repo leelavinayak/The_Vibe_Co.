@@ -336,6 +336,7 @@ const AdminDashboard = () => {
   const [reviewsLimit, setReviewsLimit] = useState(50);
   const [notificationsLimit, setNotificationsLimit] = useState(50);
   const [filterState, setFilterState] = useState('');
+  const [filterDate, setFilterDate] = useState('');
   const [isAddUserModalOpen, setIsAddUserModalOpen] = useState(false);
   const [newUserForm, setNewUserForm] = useState({ name: '', email: '', phone: '', role: 'user', state: '', gender: '', country: 'India', language: 'English', password: '' });
 
@@ -409,7 +410,9 @@ const AdminDashboard = () => {
 
   const fetchNotifications = async () => {
     try {
-      const { data } = await axios.get('/api/notifications');
+      const { data } = await axios.get('/api/notifications', {
+        headers: { Authorization: `Bearer ${user.token}` }
+      });
       setNotifications(data);
     } catch (error) {
       console.error('Error fetching notifications:', error);
@@ -418,7 +421,9 @@ const AdminDashboard = () => {
 
   const handleMarkAsRead = async (id) => {
     try {
-      await axios.put(`/api/notifications/${id}`);
+      await axios.put(`/api/notifications/${id}`, {}, {
+        headers: { Authorization: `Bearer ${user.token}` }
+      });
       fetchNotifications();
     } catch (error) {
       console.error('Error marking as read:', error);
@@ -427,7 +432,9 @@ const AdminDashboard = () => {
 
   const handleDeleteNotification = async (id) => {
     try {
-      await axios.delete(`/api/notifications/${id}`);
+      await axios.delete(`/api/notifications/${id}`, {
+        headers: { Authorization: `Bearer ${user.token}` }
+      });
       fetchNotifications();
     } catch (error) {
       console.error('Error deleting notification:', error);
@@ -436,10 +443,14 @@ const AdminDashboard = () => {
 
   const handleClearAll = async () => {
     try {
-      await axios.delete('/api/notifications');
+      await axios.delete('/api/notifications/clear', {
+        headers: { Authorization: `Bearer ${user.token}` }
+      });
       setNotifications([]);
+      showToast('All notifications cleared successfully', 'success');
     } catch (error) {
       console.error('Error clearing notifications:', error);
+      showToast('Failed to clear notifications', 'error');
     }
   };
 
@@ -746,6 +757,43 @@ const AdminDashboard = () => {
               <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '30px' }}>
                 <h3 style={{ fontFamily: "'Playfair Display', serif", fontSize: '1.8rem', margin: 0, color: '#C9A84C' }}>Global Inquiries</h3>
                 <div style={{ display: 'flex', alignItems: 'center', gap: '20px' }}>
+                  <div style={{ display: 'flex', alignItems: 'center', gap: '15px' }}>
+                    <span style={{ fontSize: '0.8rem', color: '#555577', textTransform: 'uppercase', letterSpacing: '1px' }}>Event Date:</span>
+                    <input 
+                      type="date"
+                      value={filterDate}
+                      onChange={(e) => setFilterDate(e.target.value)}
+                      style={{ 
+                        background: '#111', 
+                        border: '1px solid #C9A84C', 
+                        borderRadius: '8px', 
+                        color: '#fff', 
+                        padding: '6px 12px', 
+                        fontSize: '0.8rem', 
+                        outline: 'none',
+                        cursor: 'pointer'
+                      }}
+                    />
+                    {filterDate && (
+                      <button 
+                        onClick={() => setFilterDate('')}
+                        style={{
+                          background: 'rgba(255, 68, 68, 0.1)',
+                          border: '1px solid rgba(255, 68, 68, 0.2)',
+                          color: '#ff4444',
+                          padding: '6px 12px',
+                          borderRadius: '8px',
+                          fontSize: '0.8rem',
+                          cursor: 'pointer',
+                          fontWeight: 600,
+                          transition: '0.2s'
+                        }}
+                      >
+                        Reset
+                      </button>
+                    )}
+                  </div>
+
                   <div style={{ display: 'flex', alignItems: 'center', gap: '15px' }}>
                     <span style={{ fontSize: '0.8rem', color: '#555577', textTransform: 'uppercase', letterSpacing: '1px' }}>Show:</span>
                     <select
@@ -1512,11 +1560,18 @@ const AdminDashboard = () => {
     return <LoadingSpinner message="Orchestrating system data..." />;
   }
 
-  const filteredInquiries = data.inquiries.filter(i =>
-    i.name?.toLowerCase().includes(searchTerm.toLowerCase()) ||
-    i.email?.toLowerCase().includes(searchTerm.toLowerCase()) ||
-    i.eventType?.toLowerCase().includes(searchTerm.toLowerCase())
-  );
+  const filteredInquiries = data.inquiries.filter(i => {
+    const matchesSearch = 
+      i.name?.toLowerCase().includes(searchTerm.toLowerCase()) ||
+      i.email?.toLowerCase().includes(searchTerm.toLowerCase()) ||
+      i.eventType?.toLowerCase().includes(searchTerm.toLowerCase());
+      
+    const matchesDate = 
+      !filterDate || 
+      (i.eventDate && i.eventDate.toString().startsWith(filterDate));
+      
+    return matchesSearch && matchesDate;
+  });
 
   const filteredUsers = data.users.filter(u => {
     const matchesSearch = 
@@ -1938,18 +1993,70 @@ const AdminDashboard = () => {
                       </div>
 
                     <div style={{ background: 'rgba(255,255,255,0.02)', padding: '25px', borderRadius: '24px', border: '1px solid rgba(255,255,255,0.05)' }}>
-                      <h4 style={{ fontSize: '0.9rem', color: '#C9A84C', textTransform: 'uppercase', letterSpacing: '2px', marginBottom: '20px', fontWeight: 800 }}>Admin Pricing & Notes</h4>
+                      <h4 style={{ fontSize: '0.9rem', color: '#C9A84C', textTransform: 'uppercase', letterSpacing: '2px', marginBottom: '20px', fontWeight: 800 }}>Admin Pricing & Financials</h4>
                       <div style={{ display: 'flex', flexDirection: 'column', gap: '15px' }}>
-                        <div>
-                          <label style={{ fontSize: '0.75rem', color: '#555577', textTransform: 'uppercase', display: 'block', marginBottom: '5px' }}>Final Price (Admin Use)</label>
-                          <input 
-                            type="number" 
-                            value={selectedInquiry?.finalPrice || ''}
-                            onChange={(e) => setSelectedInquiry(prev => ({ ...prev, finalPrice: e.target.value }))}
-                            placeholder="Enter negotiated price"
-                            style={{ background: '#111', border: '1px solid rgba(255,255,255,0.1)', color: '#fff', width: '100%', padding: '10px 15px', borderRadius: '8px', outline: 'none' }}
-                          />
+                        <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '15px' }}>
+                          <div>
+                            <label style={{ fontSize: '0.75rem', color: '#555577', textTransform: 'uppercase', display: 'block', marginBottom: '5px' }}>Total Cost (₹)</label>
+                            <input 
+                              type="number" 
+                              value={selectedInquiry?.billing?.totalAmount || ''}
+                              onChange={(e) => {
+                                const val = e.target.value;
+                                setSelectedInquiry(prev => ({
+                                  ...prev,
+                                  billing: {
+                                    ...(prev.billing || { items: [], totalAmount: 0, amountPaid: 0 }),
+                                    totalAmount: val === '' ? '' : Number(val)
+                                  }
+                                }));
+                              }}
+                              placeholder="Enter total cost"
+                              style={{ background: '#111', border: '1px solid rgba(255,255,255,0.1)', color: '#fff', width: '100%', padding: '10px 15px', borderRadius: '8px', outline: 'none' }}
+                            />
+                          </div>
+                          <div>
+                            <label style={{ fontSize: '0.75rem', color: '#555577', textTransform: 'uppercase', display: 'block', marginBottom: '5px' }}>Paid Advance (₹)</label>
+                            <input 
+                              type="number" 
+                              value={selectedInquiry?.billing?.amountPaid || ''}
+                              onChange={(e) => {
+                                const val = e.target.value;
+                                setSelectedInquiry(prev => ({
+                                  ...prev,
+                                  billing: {
+                                    ...(prev.billing || { items: [], totalAmount: 0, amountPaid: 0 }),
+                                    amountPaid: val === '' ? '' : Number(val)
+                                  }
+                                }));
+                              }}
+                              placeholder="Enter paid advance"
+                              style={{ background: '#111', border: '1px solid rgba(255,255,255,0.1)', color: '#fff', width: '100%', padding: '10px 15px', borderRadius: '8px', outline: 'none' }}
+                            />
+                          </div>
                         </div>
+
+                        {/* Pending Payments Auto Calculator */}
+                        <div style={{ background: 'rgba(239, 83, 80, 0.05)', border: '1px solid rgba(239, 83, 80, 0.15)', padding: '12px 18px', borderRadius: '12px', display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+                          <span style={{ fontSize: '0.8rem', color: '#EF5350', textTransform: 'uppercase', letterSpacing: '1px', fontWeight: 600 }}>Pending Payments</span>
+                          <span style={{ fontSize: '1.1rem', fontWeight: 700, color: '#EF5350' }}>
+                            ₹{Math.max(0, (Number(selectedInquiry?.billing?.totalAmount) || 0) - (Number(selectedInquiry?.billing?.amountPaid) || 0))}
+                          </span>
+                        </div>
+
+                        <div style={{ display: 'grid', gridTemplateColumns: '1fr', gap: '15px' }}>
+                          <div>
+                            <label style={{ fontSize: '0.75rem', color: '#555577', textTransform: 'uppercase', display: 'block', marginBottom: '5px' }}>Final Negotiated Price (Alternative)</label>
+                            <input 
+                              type="number" 
+                              value={selectedInquiry?.finalPrice || ''}
+                              onChange={(e) => setSelectedInquiry(prev => ({ ...prev, finalPrice: e.target.value }))}
+                              placeholder="Enter negotiated price"
+                              style={{ background: '#111', border: '1px solid rgba(255,255,255,0.1)', color: '#fff', width: '100%', padding: '10px 15px', borderRadius: '8px', outline: 'none' }}
+                            />
+                          </div>
+                        </div>
+
                         <div>
                           <label style={{ fontSize: '0.75rem', color: '#555577', textTransform: 'uppercase', display: 'block', marginBottom: '5px' }}>Admin Notes / Extra Details</label>
                           <textarea 
@@ -1965,7 +2072,12 @@ const AdminDashboard = () => {
                             adminNotes: selectedInquiry.adminNotes,
                             message: selectedInquiry.message,
                             eventDate: selectedInquiry.eventDate,
-                            status: selectedInquiry.status
+                            status: selectedInquiry.status,
+                            billing: {
+                              items: selectedInquiry.billing?.items || [],
+                              totalAmount: Number(selectedInquiry.billing?.totalAmount || 0),
+                              amountPaid: Number(selectedInquiry.billing?.amountPaid || 0)
+                            }
                           })}
                           style={{ background: '#C9A84C', color: '#000', border: 'none', padding: '12px', borderRadius: '8px', fontWeight: 700, cursor: 'pointer', marginTop: '10px' }}
                         >

@@ -19,6 +19,7 @@ const NotificationsPage = () => {
   const [notifications, setNotifications] = useState([]);
   const [loading, setLoading] = useState(true);
   const [filter, setFilter] = useState('all');
+  const [showConfirmClear, setShowConfirmClear] = useState(false);
   const navigate = useNavigate();
 
   useEffect(() => {
@@ -51,19 +52,23 @@ const NotificationsPage = () => {
     try {
       await axios.delete(`/api/notifications/${id}`);
       fetchNotifications();
+      window.dispatchEvent(new Event('notificationsCleared'));
     } catch (error) {
       console.error('Error deleting notification:', error);
     }
   };
 
-  const handleClearAll = async () => {
-    if (window.confirm('Clear all notifications?')) {
-      try {
-        await axios.delete('/api/notifications');
-        setNotifications([]);
-      } catch (error) {
-        console.error('Error clearing notifications:', error);
-      }
+  const handleClearAll = () => {
+    setShowConfirmClear(true);
+  };
+
+  const confirmClearAll = async () => {
+    try {
+      await axios.delete('/api/notifications/clear');
+      setNotifications([]);
+      window.dispatchEvent(new Event('notificationsCleared'));
+    } catch (error) {
+      console.error('Error clearing notifications:', error);
     }
   };
 
@@ -271,6 +276,42 @@ const NotificationsPage = () => {
         </div>
 
       </div>
+
+      {/* Custom Notification Clear Confirmation Modal */}
+      <AnimatePresence>
+        {showConfirmClear && (
+          <div style={{ position: 'fixed', inset: 0, background: 'rgba(0,0,0,0.85)', backdropFilter: 'blur(10px)', zIndex: 20000, display: 'flex', alignItems: 'flex-start', justifyContent: 'center', padding: '100px 20px' }}>
+            <motion.div 
+              initial={{ opacity: 0, y: -50 }}
+              animate={{ opacity: 1, y: 0 }}
+              exit={{ opacity: 0, y: -50 }}
+              style={{ background: '#111', border: '1px solid rgba(201,168,76,0.3)', borderRadius: '24px', padding: '30px', maxWidth: '400px', width: '100%', textAlign: 'center', boxShadow: '0 20px 40px rgba(0,0,0,0.5)' }}
+            >
+              <h4 style={{ fontFamily: "'Playfair Display', serif", fontSize: '1.5rem', color: '#fff', marginBottom: '15px' }}>Clear Notifications</h4>
+              <p style={{ color: '#7a7a99', fontSize: '0.9rem', lineHeight: 1.5, marginBottom: '25px' }}>
+                Are you sure you want to clear all your notifications? This action cannot be undone.
+              </p>
+              <div style={{ display: 'flex', gap: '15px', justifyContent: 'center' }}>
+                <button 
+                  onClick={() => setShowConfirmClear(false)}
+                  style={{ padding: '12px 24px', background: 'rgba(255,255,255,0.05)', border: 'none', color: '#fff', borderRadius: '12px', fontWeight: 600, cursor: 'pointer' }}
+                >
+                  Cancel
+                </button>
+                <button 
+                  onClick={() => {
+                    setShowConfirmClear(false);
+                    confirmClearAll();
+                  }}
+                  style={{ padding: '12px 24px', background: '#C9A84C', border: 'none', color: '#000', borderRadius: '12px', fontWeight: 700, cursor: 'pointer' }}
+                >
+                  Clear All
+                </button>
+              </div>
+            </motion.div>
+          </div>
+        )}
+      </AnimatePresence>
     </div>
   );
 };

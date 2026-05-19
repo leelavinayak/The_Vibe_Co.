@@ -1,5 +1,6 @@
 const Contact = require('../models/Contact');
 const Service = require('../models/Service');
+const User = require('../models/User');
 const sendEmail = require('../services/emailService');
 const sendWhatsAppMessage = require('../services/whatsappService');
 const PDFDocument = require('pdfkit');
@@ -21,7 +22,7 @@ const generatePDFBuffer = (contact) => {
     doc.on('error', reject);
 
     // Premium Design Background
-    doc.rect(0, 0, doc.page.width, doc.page.height).fill('#050505');
+    doc.rect(0, 0, doc.page.width, doc.page.height).fill('#ffffff');
 
     // Ornamental Border
     doc.rect(20, 20, doc.page.width - 40, doc.page.height - 40).lineWidth(1).strokeColor('#C9A84C').stroke();
@@ -34,7 +35,7 @@ const generatePDFBuffer = (contact) => {
       .text('THE VIBE CO.', { align: 'center', charSpacing: 10 });
 
     doc.moveDown(0.2);
-    doc.fillColor('#7a7a99')
+    doc.fillColor('#444444')
       .font('Helvetica')
       .fontSize(9)
       .text('THE PINNACLE OF EVENT ORCHESTRATION', { align: 'center', characterSpacing: 4 });
@@ -42,7 +43,7 @@ const generatePDFBuffer = (contact) => {
     doc.moveDown(4);
 
     // Section Title
-    doc.fillColor('#ffffff').fontSize(22).font('Times-Bold').text('INQUIRY DOSSIER', { align: 'center', characterSpacing: 2 });
+    doc.fillColor('#1a1a1a').fontSize(22).font('Times-Bold').text('INQUIRY DOSSIER', { align: 'center', characterSpacing: 2 });
     doc.moveDown(0.5);
     doc.moveTo(200, doc.y).lineTo(doc.page.width - 200, doc.y).lineWidth(1).strokeColor('#C9A84C').stroke();
     doc.moveDown(3);
@@ -50,7 +51,7 @@ const generatePDFBuffer = (contact) => {
     const addRow = (label, value) => {
       doc.fillColor('#C9A84C').font('Helvetica-Bold').fontSize(11).text(label.toUpperCase(), { continued: false });
       doc.moveDown(0.2);
-      doc.fillColor('#ffffff').font('Helvetica').fontSize(14).text(value || 'NOT SPECIFIED');
+      doc.fillColor('#1a1a1a').font('Helvetica').fontSize(14).text(value || 'NOT SPECIFIED');
       doc.moveDown(1.5);
     };
 
@@ -64,7 +65,7 @@ const generatePDFBuffer = (contact) => {
     doc.moveDown(1);
     doc.fillColor('#C9A84C').font('Helvetica-Bold').fontSize(11).text('REQUIREMENT BRIEF', { underline: false });
     doc.moveDown(0.5);
-    doc.fillColor('#7a7a99').font('Helvetica').fontSize(12).text(contact.message || 'No specific requirements provided.', { lineGap: 6, align: 'justify' });
+    doc.fillColor('#444444').font('Helvetica').fontSize(12).text(contact.message || 'No specific requirements provided.', { lineGap: 6, align: 'justify' });
 
     // Footer
     const bottomPos = doc.page.height - 100;
@@ -101,8 +102,8 @@ const submitContact = async (req, res) => {
 
     const { inquiryAdminTemplate, welcomeTemplate, whatsappTemplate } = require('../utils/premiumTemplates');
 
-    // 1. Send Email to Admin
-    await sendEmail({
+    // 1. Send Email to Admin (Non-blocking background)
+    sendEmail({
       email: process.env.ADMIN_EMAIL || 'admin@thevibeco.com',
       subject: `New Event Inquiry: ${contact.eventType.toUpperCase()} ⚜️`,
       html: inquiryAdminTemplate(contact),
@@ -113,59 +114,63 @@ const submitContact = async (req, res) => {
           content: pdfBuffer
         }
       ]
-    });
+    }).catch(err => console.error('Admin inquiry email background error:', err));
 
-    // 2. Send Thank You Email to User
-    await sendEmail({
+    // 2. Send Thank You Email to User (Non-blocking background)
+    sendEmail({
       email: contact.email,
       subject: 'Orchestration Request Received - THE VIBE CO. ⚜️',
       html: welcomeTemplate(contact.name),
       message: `Hi ${contact.name}, we have received your inquiry.`
-    });
+    }).catch(err => console.error('User welcome email background error:', err));
 
-    // 3. Send WhatsApp/SMS to User
+    // 3. Send WhatsApp/SMS to User (Non-blocking background)
     if (contact.phone) {
-      await sendWhatsAppMessage(contact.phone, whatsappTemplate(contact.name, contact.eventType));
+      sendWhatsAppMessage(contact.phone, whatsappTemplate(contact.name, contact.eventType))
+        .catch(err => console.error('User WhatsApp background error:', err));
     }
 
-    // 4. Send WhatsApp/SMS to Admin
-    try {
-      const adminPhone = process.env.ADMIN_PHONE || '';
-      if (adminPhone) {
-        await sendWhatsAppMessage(
-          adminPhone,
-          `🔔 New ${contact.eventType.toUpperCase()} Inquiry!\n\nClient: ${contact.name}\nEmail: ${contact.email}\nPhone: ${contact.phone || 'N/A'}\nBudget: ${contact.budget || 'N/A'}\nDate: ${contact.eventDate ? new Date(contact.eventDate).toLocaleDateString() : 'TBD'}\n\nCheck your admin dashboard for full details. - THE VIBE CO.`
-        );
-      }
-    } catch (adminWhatsappErr) {
-      console.error('Admin WhatsApp notification error:', adminWhatsappErr);
+    // 4. Send WhatsApp/SMS to Admin (Non-blocking background)
+    const adminPhone = process.env.ADMIN_PHONE || '';
+    if (adminPhone) {
+      sendWhatsAppMessage(
+        adminPhone,
+        `🔔 New ${contact.eventType.toUpperCase()} Inquiry!\n\nClient: ${contact.name}\nEmail: ${contact.email}\nPhone: ${contact.phone || 'N/A'}\nBudget: ${contact.budget || 'N/A'}\nDate: ${contact.eventDate ? new Date(contact.eventDate).toLocaleDateString() : 'TBD'}\n\nCheck your admin dashboard for full details. - THE VIBE CO.`
+      ).catch(err => console.error('Admin WhatsApp background error:', err));
     }
 
-    // 5. Send Email to Provider
+    // 5. Send Email and WhatsApp to Provider (Non-blocking background)
     if (contactData.service) {
-      try {
-        const providerUser = await User.findOne({ serviceId: contactData.service, role: 'provider' });
-        if (providerUser) {
-          await sendEmail({
-            email: providerUser.email,
-            subject: `New Service Booking Request: ${contact.eventType.toUpperCase()} ⚜️`,
-            html: `
-              <div style="font-family: Arial, sans-serif; padding: 20px; color: #333; border: 1px solid #C9A84C; border-radius: 10px;">
-                <h2 style="color: #C9A84C;">New Booking Inquiry Received</h2>
-                <p>Hello <strong>${providerUser.name}</strong>,</p>
-                <p>You have received a new booking request for your service on THE VIBE CO.</p>
-                <p><strong>Client:</strong> ${contact.name}</p>
-                <p><strong>Event Date:</strong> ${contact.eventDate ? new Date(contact.eventDate).toLocaleDateString() : 'TBD'}</p>
-                <p>Please log in to your Provider Dashboard to review the details, chat with the client, and accept or reject the booking.</p>
-                <a href="${process.env.FRONTEND_URL}/login" style="background: #C9A84C; color: #fff; padding: 10px 20px; text-decoration: none; border-radius: 5px; font-weight: bold; display: inline-block; margin-top: 15px;">Go to Dashboard</a>
-              </div>
-            `,
-            message: `New booking request from ${contact.name}`
-          });
-        }
-      } catch (providerEmailErr) {
-        console.error('Provider Email notification error:', providerEmailErr);
-      }
+      User.findOne({ serviceId: contactData.service, role: 'provider' })
+        .then(providerUser => {
+          if (providerUser) {
+            // Email dispatch
+            sendEmail({
+              email: providerUser.email,
+              subject: `New Service Booking Request: ${contact.eventType.toUpperCase()} ⚜️`,
+              html: `
+                <div style="font-family: Arial, sans-serif; padding: 20px; color: #333; border: 1px solid #C9A84C; border-radius: 10px;">
+                  <h2 style="color: #C9A84C;">New Booking Inquiry Received</h2>
+                  <p>Hello <strong>${providerUser.name}</strong>,</p>
+                  <p>You have received a new booking request for your service on THE VIBE CO.</p>
+                  <p><strong>Client:</strong> ${contact.name}</p>
+                  <p><strong>Event Date:</strong> ${contact.eventDate ? new Date(contact.eventDate).toLocaleDateString() : 'TBD'}</p>
+                  <p>Please log in to your Provider Dashboard to review the details, chat with the client, and accept or reject the booking.</p>
+                  <a href="${process.env.FRONTEND_URL || 'http://localhost:3000'}/login" style="background: #C9A84C; color: #fff; padding: 10px 20px; text-decoration: none; border-radius: 5px; font-weight: bold; display: inline-block; margin-top: 15px;">Go to Dashboard</a>
+                </div>
+              `,
+              message: `New booking request from ${contact.name}`
+            }).catch(err => console.error('Provider email background error:', err));
+
+            // WhatsApp dispatch
+            if (providerUser.phone) {
+              const providerWaMsg = `*THE VIBE CO. PARTNER* ⚜️\n\n*New Service Booking Request!* 🔔\n\nClient *${contact.name}* has requested your premium orchestration service.\n\n📅 *Event Date:* ${contact.eventDate ? new Date(contact.eventDate).toLocaleDateString() : 'TBD'}\n✍️ *Event Type:* ${contact.eventType.toUpperCase()}\n\nPlease login to your Partner Dashboard to review details and begin chatting:\n${process.env.FRONTEND_URL || 'http://localhost:3000'}/login`;
+              sendWhatsAppMessage(providerUser.phone, providerWaMsg)
+                .catch(err => console.error('Provider booking WhatsApp background error:', err));
+            }
+          }
+        })
+        .catch(err => console.error('Error finding provider for booking request:', err));
     }
 
 
@@ -284,4 +289,84 @@ const getMyInquiries = async (req, res) => {
   }
 };
 
-module.exports = { submitContact, getContacts, getPublicStats, getMyInquiries };
+const cancelInquiry = async (req, res) => {
+  try {
+    const inquiry = await Contact.findById(req.params.id);
+
+    if (!inquiry) {
+      return res.status(404).json({ success: false, message: 'Inquiry not found' });
+    }
+
+    // Ensure the inquiry belongs to the authenticated user (check user ID and/or matching email)
+    const inquiryUserId = inquiry.user ? (inquiry.user._id || inquiry.user) : null;
+    const isOwner = (inquiryUserId && inquiryUserId.toString() === req.user._id.toString()) ||
+                    (inquiry.email && req.user.email && inquiry.email.toLowerCase() === req.user.email.toLowerCase());
+
+    if (!isOwner) {
+      return res.status(401).json({ success: false, message: 'Not authorized to cancel this booking' });
+    }
+
+    // Only allow cancellation if status is new (cannot cancel if accepted, completed, rejected, or cancelled)
+    if (inquiry.status === 'accepted') {
+      return res.status(400).json({ success: false, message: 'This booking has already been accepted. If you wish to cancel, please contact our support team.' });
+    }
+
+    if (['completed', 'rejected', 'cancelled'].includes(inquiry.status)) {
+      return res.status(400).json({ success: false, message: `Cannot cancel an inquiry that is already ${inquiry.status}` });
+    }
+
+    inquiry.status = 'cancelled';
+    await inquiry.save();
+
+    // Send notifications to provider and admin (background)
+    try {
+      const sendEmail = require('../services/emailService');
+      const sendWhatsAppMessage = require('../services/whatsappService');
+
+      const eventTypeString = (inquiry.eventType || 'Event').toUpperCase();
+
+      // Find provider user if there is a service
+      let providerUser = null;
+      if (inquiry.service) {
+        providerUser = await User.findOne({ serviceId: inquiry.service, role: 'provider' });
+      }
+
+      // Email to Provider
+      if (providerUser) {
+        sendEmail({
+          email: providerUser.email,
+          subject: `⚜️ Booking Cancelled by Client: ${eventTypeString}`,
+          message: `Hello ${providerUser.name}, client ${inquiry.name} has cancelled the booking request.`,
+          html: `
+            <div style="font-family: Arial, sans-serif; padding: 20px; color: #333; border: 1px solid #C9A84C; border-radius: 10px;">
+              <h2 style="color: #d32f2f;">Booking Cancelled By Client</h2>
+              <p>Hello <strong>${providerUser.name}</strong>,</p>
+              <p>Please note that the booking request for <strong>${eventTypeString}</strong> by client <strong>${inquiry.name}</strong> has been cancelled by the client.</p>
+              <p>If you had any scheduled arrangements, they have been cleared from the console.</p>
+            </div>
+          `
+        }).catch(err => console.error('Provider cancel email error:', err));
+
+        // WhatsApp to Provider
+        if (providerUser.phone) {
+          const providerCancelWaMsg = `*THE VIBE CO.* ⚜️\n\n*Booking Cancelled by Client* ⚠️\n\nHello ${providerUser.name}, the booking request for *${eventTypeString}* from client *${inquiry.name}* has been cancelled.`;
+          sendWhatsAppMessage(providerUser.phone, providerCancelWaMsg).catch(err => console.error('Provider cancel WA error:', err));
+        }
+      }
+
+      // WhatsApp to Admin
+      const adminPhone = process.env.ADMIN_PHONE || '8523086151';
+      const adminCancelWaMsg = `*THE VIBE CO. [MONITOR]* ⚜️\n\n*Booking Cancelled by Client* ⚠️\n\nClient *${inquiry.name}* has cancelled their booking request for *${eventTypeString}*.`;
+      sendWhatsAppMessage(adminPhone, adminCancelWaMsg).catch(err => console.error('Admin cancel WA error:', err));
+
+    } catch (notifyErr) {
+      console.error('Error sending cancellation notifications:', notifyErr);
+    }
+
+    res.json({ success: true, message: 'Inquiry cancelled successfully', data: inquiry });
+  } catch (error) {
+    res.status(500).json({ success: false, message: error.message });
+  }
+};
+
+module.exports = { submitContact, getContacts, getPublicStats, getMyInquiries, cancelInquiry };

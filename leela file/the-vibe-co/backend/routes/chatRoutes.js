@@ -60,7 +60,45 @@ router.post('/', protect, async (req, res) => {
 
     const populatedMessage = await Message.findById(message._id)
       .populate('sender', 'name role')
-      .populate('receiver', 'name role');
+      .populate('receiver', 'name role phone');
+
+    // Send WhatsApp notification to receiver
+    let receiverPhone = populatedMessage.receiver?.phone;
+    if (!receiverPhone && populatedMessage.receiver?.role === 'admin') {
+      receiverPhone = process.env.ADMIN_PHONE || '8523086151';
+    }
+
+    if (receiverPhone) {
+      try {
+        const senderName = populatedMessage.sender?.name || 'Someone';
+        let whatsappMsg = `*THE VIBE CO.* ⚜️\n\n*New Chat Message from ${senderName}*\n`;
+        if (text) {
+          whatsappMsg += `\n💬 "${text}"`;
+        }
+        if (fileUrl) {
+          whatsappMsg += `\n📎 Attachment: ${fileUrl}`;
+        }
+        whatsappMsg += `\n\nReply directly on the platform: ${process.env.FRONTEND_URL || 'http://localhost:3000'}`;
+
+        const sendWhatsAppMessage = require('../services/whatsappService');
+        await sendWhatsAppMessage(receiverPhone, whatsappMsg);
+
+        // Forward a Copy to Admin's WhatsApp (if the message is between client & service provider)
+        const adminPhone = process.env.ADMIN_PHONE || '8523086151';
+        if (populatedMessage.receiver?.role !== 'admin' && populatedMessage.sender?.role !== 'admin') {
+          let adminMsg = `*THE VIBE CO. [MONITOR]* ⚜️\n\n*Chat between ${senderName} (Client/Partner) & ${populatedMessage.receiver?.name || 'Receiver'}*\n`;
+          if (text) {
+            adminMsg += `\n💬 "${text}"`;
+          }
+          if (fileUrl) {
+            adminMsg += `\n📎 Attachment: ${fileUrl}`;
+          }
+          await sendWhatsAppMessage(adminPhone, adminMsg);
+        }
+      } catch (whatsappErr) {
+        console.error('Error sending chat WhatsApp notification:', whatsappErr);
+      }
+    }
 
     res.status(201).json(populatedMessage);
   } catch (error) {

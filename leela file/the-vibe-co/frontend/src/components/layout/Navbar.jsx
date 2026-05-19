@@ -18,17 +18,22 @@ const Navbar = () => {
       setIsScrolled(window.scrollY > 50);
     };
     window.addEventListener('scroll', handleScroll);
+    window.addEventListener('notificationsCleared', fetchUnreadCount);
 
     if (user) {
       fetchUnreadCount();
       const interval = setInterval(fetchUnreadCount, 30000); // Poll every 30s
       return () => {
         window.removeEventListener('scroll', handleScroll);
+        window.removeEventListener('notificationsCleared', fetchUnreadCount);
         clearInterval(interval);
       };
     }
 
-    return () => window.removeEventListener('scroll', handleScroll);
+    return () => {
+      window.removeEventListener('scroll', handleScroll);
+      window.removeEventListener('notificationsCleared', fetchUnreadCount);
+    };
   }, [user]);
 
   const fetchUnreadCount = async () => {
@@ -273,7 +278,7 @@ const Navbar = () => {
                   Login
                 </Link>
               )}
-              {user?.role !== 'admin' && (
+              {user?.role !== 'admin' && user?.role !== 'provider' && (
                 <Link to="/contact" className="btn btn-primary" style={{
                   padding: '10px 24px',
                   fontSize: '0.8rem',
@@ -385,20 +390,22 @@ const Navbar = () => {
                 </Link>
               </motion.div>
             ))}
-            <motion.div
-              initial={{ opacity: 0, y: 20 }}
-              animate={{ opacity: 1, y: 0 }}
-              transition={{ delay: 0.6 }}
-            >
-              <Link
-                to="/contact"
-                onClick={() => setIsMobileMenuOpen(false)}
-                className="btn btn-primary"
-                style={{ marginTop: '20px' }}
+            {user?.role !== 'admin' && user?.role !== 'provider' && (
+              <motion.div
+                initial={{ opacity: 0, y: 20 }}
+                animate={{ opacity: 1, y: 0 }}
+                transition={{ delay: 0.6 }}
               >
-                Book Now
-              </Link>
-            </motion.div>
+                <Link
+                  to="/contact"
+                  onClick={() => setIsMobileMenuOpen(false)}
+                  className="btn btn-primary"
+                  style={{ marginTop: '20px' }}
+                >
+                  Book Now
+                </Link>
+              </motion.div>
+            )}
           </motion.div>
         )}
       </AnimatePresence>

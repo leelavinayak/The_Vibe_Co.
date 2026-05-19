@@ -436,7 +436,7 @@ const HomePage = () => {
       </section>
 
       {/* ═══════ FEATURED EVENTS ═══════ */}
-      <section className="section" style={{ background: '#111111' }}>
+      {/* <section className="section" style={{ background: '#111111' }}>
         <div className="container">
           <motion.div initial="hidden" whileInView="visible" viewport={{ once: true }} variants={fadeUp} className="section-header">
             <span className="section-subtitle">Upcoming</span>
@@ -472,7 +472,7 @@ const HomePage = () => {
             <Link to="/events" className="btn btn-outline">View All Events <HiArrowRight /></Link>
           </div>
         </div>
-      </section>
+      </section> */}
 
       {/* ═══════ TESTIMONIALS & REVIEWS ═══════ */}
       <section className="section" style={{ background: '#111111', borderTop: '1px solid rgba(201,168,76,0.1)' }}>

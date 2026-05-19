@@ -12,7 +12,7 @@ router.use(protect);
 
 router.get('/', getNotifications);
 router.put('/:id', markAsRead);
+router.delete('/clear', clearNotifications);
 router.delete('/:id', deleteNotification);
-router.delete('/', clearNotifications);
 
 module.exports = router;

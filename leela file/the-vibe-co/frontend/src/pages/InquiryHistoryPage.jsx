@@ -9,6 +9,8 @@ import LoadingSpinner from '../components/common/LoadingSpinner';
 const InquiryHistoryPage = () => {
   const { user } = useAuth();
   const [history, setHistory] = useState([]);
+  const [bookings, setBookings] = useState([]);
+  const [activeTab, setActiveTab] = useState('inquiries');
   const [loading, setLoading] = useState(true);
   const [selectedInquiry, setSelectedInquiry] = useState(null);
   const [isReviewModalOpen, setIsReviewModalOpen] = useState(false);
@@ -25,6 +27,8 @@ const InquiryHistoryPage = () => {
   const chatEndRef = React.useRef(null);
   const navigate = useNavigate();
   const [isMobile, setIsMobile] = useState(window.innerWidth < 992);
+  const [showConfirmCancel, setShowConfirmCancel] = useState(false);
+  const [cancelTargetId, setCancelTargetId] = useState(null);
 
   useEffect(() => {
     const handleResize = () => setIsMobile(window.innerWidth < 992);
@@ -84,10 +88,23 @@ const InquiryHistoryPage = () => {
   const fetchHistory = async () => {
     try {
       setLoading(true);
-      const { data } = await axios.get('/api/auth/profile');
-      // Sort history to show completed events first or recently updated
-      const sortedHistory = (data.inquiryHistory || []).sort((a, b) => new Date(b.updatedAt) - new Date(a.updatedAt));
+      
+      // Fetch both service inquiries and event bookings in parallel
+      const [profileRes, bookingsRes] = await Promise.all([
+        axios.get('/api/auth/profile'),
+        axios.get('/api/bookings/my').catch(err => {
+          console.warn('Could not fetch event bookings:', err);
+          return { data: [] };
+        })
+      ]);
+
+      const sortedHistory = (profileRes.data.inquiryHistory || []).sort(
+        (a, b) => new Date(b.updatedAt) - new Date(a.updatedAt)
+      );
       setHistory(sortedHistory);
+
+      const bookingsData = bookingsRes.data || [];
+      setBookings(bookingsData);
     } catch (error) {
       console.error('Error fetching history:', error);
     } finally {
@@ -129,6 +146,26 @@ const InquiryHistoryPage = () => {
     }
   };
 
+  const handleCancelInquiry = (id) => {
+    setCancelTargetId(id);
+    setShowConfirmCancel(true);
+  };
+
+  const confirmCancelInquiry = async (id) => {
+    if (!id) return;
+    try {
+      await axios.put(`/api/contact/${id}/cancel`);
+      alert('Your orchestration request has been cancelled.');
+      // Update selected inquiry status locally
+      setSelectedInquiry(prev => ({ ...prev, status: 'cancelled' }));
+      // Refresh list
+      fetchHistory();
+    } catch (error) {
+      console.error('Error cancelling booking:', error);
+      alert(error.response?.data?.message || 'Failed to cancel the booking. Please try again.');
+    }
+  };
+
   if (loading) {
     return <LoadingSpinner message="Retrieving your event history..." />;
   }
@@ -148,76 +185,237 @@ const InquiryHistoryPage = () => {
           <p style={{ color: '#7a7a99', marginTop: '10px' }}>Track the progress of your premium event requests.</p>
         </header>
 
-        <div style={{ display: 'flex', flexDirection: 'column', gap: '20px' }}>
-          {history.length > 0 ? (
-            history.map((item) => (
-              <motion.div
-                initial={{ opacity: 0, y: 20 }}
-                animate={{ opacity: 1, y: 0 }}
-                key={item._id}
-                onClick={() => setSelectedInquiry(item)}
-                style={{
-                  background: isMobile ? 'rgba(255,255,255,0.05)' : 'rgba(255,255,255,0.03)',
-                  padding: isMobile ? '30px 24px' : '24px',
-                  borderRadius: isMobile ? '24px' : '28px',
-                  border: isMobile ? 'none' : '1px solid rgba(255,255,255,0.08)',
-                  display: 'flex',
-                  justifyContent: 'space-between',
-                  alignItems: 'center',
-                  transition: '0.3s cubic-bezier(0.4, 0, 0.2, 1)',
-                  cursor: 'pointer',
-                  position: 'relative',
-                  overflow: 'hidden',
-                  backdropFilter: 'blur(10px)',
-                  boxShadow: isMobile ? '0 4px 20px rgba(0,0,0,0.15)' : '0 10px 30px rgba(0,0,0,0.2)'
-                }}
-                whileHover={{ scale: 1.02, borderColor: 'rgba(201, 168, 76, 0.4)', background: 'rgba(255,255,255,0.05)' }}
-              >
-                <div style={{ flex: 1 }}>
-                  <div style={{ display: 'flex', alignItems: 'center', gap: '15px', marginBottom: '12px', flexWrap: 'wrap' }}>
-                    <h4 style={{ color: '#fff', fontSize: '1.25rem', margin: 0 }}>
-                      {['catering', 'photography', 'decoration', 'total_event_organisation'].includes(item.eventType)
-                        ? `${item.eventType.split('_').map(w => w.charAt(0).toUpperCase() + w.slice(1)).join(' ')} Booking`
-                        : `${item.eventType.split('_').map(w => w.charAt(0).toUpperCase() + w.slice(1)).join(' ')} Showcase`}
-                    </h4>
-                    <span style={{
-                      padding: '4px 12px',
-                      borderRadius: '8px',
-                      fontSize: '0.75rem',
-                      background: item.status === 'accepted' ? 'rgba(76, 175, 80, 0.1)' : 'rgba(201, 168, 76, 0.1)',
-                      color: item.status === 'accepted' ? '#81C784' : '#C9A84C',
-                      fontWeight: 800,
-                      textTransform: 'uppercase',
-                      letterSpacing: '1px'
-                    }}>
-                      {item.status}
-                    </span>
-                  </div>
-                  <div style={{ display: 'flex', alignItems: 'center', gap: '25px', color: '#555577', fontSize: '0.9rem', flexWrap: 'wrap' }}>
-                    <span style={{ display: 'flex', alignItems: 'center', gap: '8px' }}><HiClock /> {new Date(item.createdAt).toLocaleDateString()}</span>
-                    {item.billing?.totalAmount ? (
-                      <span style={{ display: 'flex', alignItems: 'center', gap: '8px', color: '#81C784', fontWeight: 600 }}>
-                        <HiCurrencyDollar /> Total Amount: ₹{item.billing.totalAmount}
+        {/* Tab Switcher */}
+        <div style={{ 
+          display: 'flex', 
+          background: 'rgba(255,255,255,0.02)', 
+          border: '1px solid rgba(255,255,255,0.08)',
+          borderRadius: '16px',
+          padding: '4px',
+          marginBottom: '35px'
+        }}>
+          <button
+            onClick={() => setActiveTab('inquiries')}
+            style={{
+              flex: 1,
+              padding: '12px',
+              borderRadius: '12px',
+              border: 'none',
+              cursor: 'pointer',
+              fontWeight: 600,
+              fontSize: '0.9rem',
+              transition: 'all 0.3s ease',
+              background: activeTab === 'inquiries' ? 'linear-gradient(135deg, #C9A84C, #FFD700)' : 'transparent',
+              color: activeTab === 'inquiries' ? '#0a0a0a' : '#9999b3'
+            }}
+          >
+            Service Inquiries
+          </button>
+          <button
+            onClick={() => setActiveTab('bookings')}
+            style={{
+              flex: 1,
+              padding: '12px',
+              borderRadius: '12px',
+              border: 'none',
+              cursor: 'pointer',
+              fontWeight: 600,
+              fontSize: '0.9rem',
+              transition: 'all 0.3s ease',
+              background: activeTab === 'bookings' ? 'linear-gradient(135deg, #C9A84C, #FFD700)' : 'transparent',
+              color: activeTab === 'bookings' ? '#0a0a0a' : '#9999b3'
+            }}
+          >
+            Event VIP Tickets
+          </button>
+        </div>
+
+        {activeTab === 'inquiries' ? (
+          <div style={{ display: 'flex', flexDirection: 'column', gap: '20px' }}>
+            {history.length > 0 ? (
+              history.map((item) => (
+                <motion.div
+                  initial={{ opacity: 0, y: 20 }}
+                  animate={{ opacity: 1, y: 0 }}
+                  key={item._id}
+                  onClick={() => setSelectedInquiry(item)}
+                  style={{
+                    background: isMobile ? 'rgba(255,255,255,0.05)' : 'rgba(255,255,255,0.03)',
+                    padding: isMobile ? '30px 24px' : '24px',
+                    borderRadius: isMobile ? '24px' : '28px',
+                    border: isMobile ? 'none' : '1px solid rgba(255,255,255,0.08)',
+                    display: 'flex',
+                    justifyContent: 'space-between',
+                    alignItems: 'center',
+                    transition: '0.3s cubic-bezier(0.4, 0, 0.2, 1)',
+                    cursor: 'pointer',
+                    position: 'relative',
+                    overflow: 'hidden',
+                    backdropFilter: 'blur(10px)',
+                    boxShadow: isMobile ? '0 4px 20px rgba(0,0,0,0.15)' : '0 10px 30px rgba(0,0,0,0.2)'
+                  }}
+                  whileHover={{ scale: 1.02, borderColor: 'rgba(201, 168, 76, 0.4)', background: 'rgba(255,255,255,0.05)' }}
+                >
+                  <div style={{ flex: 1 }}>
+                    <div style={{ display: 'flex', alignItems: 'center', gap: '15px', marginBottom: '12px', flexWrap: 'wrap' }}>
+                      <h4 style={{ color: '#fff', fontSize: '1.25rem', margin: 0 }}>
+                        {['catering', 'photography', 'decoration', 'total_event_organisation'].includes(item.eventType)
+                          ? `${item.eventType.split('_').map(w => w.charAt(0).toUpperCase() + w.slice(1)).join(' ')} Booking`
+                          : `${item.eventType.split('_').map(w => w.charAt(0).toUpperCase() + w.slice(1)).join(' ')} Showcase`}
+                      </h4>
+                      <span style={{
+                        padding: '4px 12px',
+                        borderRadius: '8px',
+                        fontSize: '0.75rem',
+                        background: item.status === 'accepted' ? 'rgba(76, 175, 80, 0.1)' : (item.status === 'cancelled' ? 'rgba(239, 83, 80, 0.1)' : 'rgba(201, 168, 76, 0.1)'),
+                        color: item.status === 'accepted' ? '#81C784' : (item.status === 'cancelled' ? '#EF5350' : '#C9A84C'),
+                        fontWeight: 800,
+                        textTransform: 'uppercase',
+                        letterSpacing: '1px'
+                      }}>
+                        {item.status}
                       </span>
-                    ) : (
-                      item.budget && <span style={{ display: 'flex', alignItems: 'center', gap: '8px' }}><HiCurrencyDollar /> Budget: {item.budget}</span>
+                      {item.status === 'completed' && (
+                        <span style={{
+                          padding: '4px 12px',
+                          borderRadius: '8px',
+                          fontSize: '0.75rem',
+                          background: (item.billing?.totalAmount > 0 && item.billing?.amountPaid >= item.billing?.totalAmount) ? 'rgba(129, 199, 132, 0.1)' : 'rgba(239, 83, 80, 0.1)',
+                          color: (item.billing?.totalAmount > 0 && item.billing?.amountPaid >= item.billing?.totalAmount) ? '#81C784' : '#EF5350',
+                          fontWeight: 800,
+                          textTransform: 'uppercase',
+                          letterSpacing: '1px',
+                          border: `1px solid ${(item.billing?.totalAmount > 0 && item.billing?.amountPaid >= item.billing?.totalAmount) ? '#81C78430' : '#EF535030'}`
+                        }}>
+                          {(item.billing?.totalAmount > 0 && item.billing?.amountPaid >= item.billing?.totalAmount) ? 'Paid' : 'Unpaid'}
+                        </span>
+                      )}
+                    </div>
+                    <div style={{ display: 'flex', alignItems: 'center', gap: '25px', color: '#555577', fontSize: '0.9rem', flexWrap: 'wrap' }}>
+                      <span style={{ display: 'flex', alignItems: 'center', gap: '8px' }}><HiClock /> {new Date(item.createdAt).toLocaleDateString()}</span>
+                      {item.billing?.totalAmount ? (
+                        <span style={{ display: 'flex', alignItems: 'center', gap: '8px', color: '#81C784', fontWeight: 600 }}>
+                          <HiCurrencyDollar /> Total Amount: ₹{item.billing.totalAmount}
+                        </span>
+                      ) : (
+                        item.budget && <span style={{ display: 'flex', alignItems: 'center', gap: '8px' }}><HiCurrencyDollar /> Budget: {item.budget}</span>
+                      )}
+                    </div>
+                  </div>
+                  <div style={{ width: '50px', height: '50px', minWidth: '50px', borderRadius: '15px', background: 'rgba(201,168,76,0.05)', color: '#C9A84C', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: '1.5rem' }}>
+                    <HiClipboardList />
+                  </div>
+                </motion.div>
+              ))
+            ) : (
+              <div style={{ textAlign: 'center', padding: '100px 40px', background: 'rgba(255,255,255,0.01)', borderRadius: '32px', border: '1px dashed rgba(255,255,255,0.05)' }}>
+                <HiClipboardList style={{ fontSize: '60px', color: '#222', marginBottom: '20px' }} />
+                <h4 style={{ fontSize: '1.5rem', color: '#555', marginBottom: '10px' }}>No Event History</h4>
+                <p style={{ color: '#7a7a99', marginBottom: '30px' }}>Your journey to an extraordinary event begins here.</p>
+                <button onClick={() => navigate('/contact')} className="btn btn-primary" style={{ padding: '15px 40px' }}>Create Your First Inquiry</button>
+              </div>
+            )}
+          </div>
+        ) : (
+          <div style={{ display: 'flex', flexDirection: 'column', gap: '20px' }}>
+            {bookings.length > 0 ? (
+              bookings.map((booking) => (
+                <motion.div
+                  initial={{ opacity: 0, y: 20 }}
+                  animate={{ opacity: 1, y: 0 }}
+                  key={booking._id}
+                  style={{
+                    background: isMobile ? 'rgba(255,255,255,0.05)' : 'rgba(255,255,255,0.03)',
+                    padding: isMobile ? '30px 24px' : '24px',
+                    borderRadius: isMobile ? '24px' : '28px',
+                    border: isMobile ? 'none' : '1px solid rgba(255,255,255,0.08)',
+                    display: 'flex',
+                    justifyContent: 'space-between',
+                    alignItems: 'center',
+                    transition: '0.3s cubic-bezier(0.4, 0, 0.2, 1)',
+                    position: 'relative',
+                    overflow: 'hidden',
+                    backdropFilter: 'blur(10px)',
+                    boxShadow: isMobile ? '0 4px 20px rgba(0,0,0,0.15)' : '0 10px 30px rgba(0,0,0,0.2)'
+                  }}
+                  whileHover={{ scale: 1.02, borderColor: 'rgba(201, 168, 76, 0.4)', background: 'rgba(255,255,255,0.05)' }}
+                >
+                  <div style={{ flex: 1 }}>
+                    <div style={{ display: 'flex', alignItems: 'center', gap: '15px', marginBottom: '12px', flexWrap: 'wrap' }}>
+                      <h4 style={{ color: '#fff', fontSize: '1.25rem', margin: 0 }}>
+                        {booking.event?.title || 'Exclusive Showcase VIP Pass'}
+                      </h4>
+                      <span style={{
+                        padding: '4px 12px',
+                        borderRadius: '8px',
+                        fontSize: '0.75rem',
+                        background: 'rgba(129, 199, 132, 0.1)',
+                        color: '#81C784',
+                        fontWeight: 800,
+                        textTransform: 'uppercase',
+                        letterSpacing: '1px'
+                      }}>
+                        Confirmed
+                      </span>
+                      <span style={{
+                        padding: '4px 12px',
+                        borderRadius: '8px',
+                        fontSize: '0.75rem',
+                        background: 'rgba(201, 168, 76, 0.1)',
+                        color: '#C9A84C',
+                        fontWeight: 800,
+                        textTransform: 'uppercase',
+                        letterSpacing: '1px',
+                        border: '1px solid rgba(201, 168, 76, 0.2)'
+                      }}>
+                        {booking.tickets} Pass{booking.tickets > 1 ? 'es' : ''}
+                      </span>
+                    </div>
+                    <div style={{ display: 'flex', alignItems: 'center', gap: '22px', color: '#7a7a99', fontSize: '0.9rem', flexWrap: 'wrap' }}>
+                      <span style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+                        <HiClock style={{ color: '#C9A84C' }} /> 
+                        {booking.event?.date ? new Date(booking.event.date).toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' }) : 'TBD'}
+                      </span>
+                      <span style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+                        <HiLocationMarker style={{ color: '#C9A84C' }} /> 
+                        {booking.event?.venue?.name || 'TBD'}, {booking.event?.venue?.city || ''}
+                      </span>
+                      <span style={{ display: 'flex', alignItems: 'center', gap: '8px', color: '#81C784', fontWeight: 600 }}>
+                        <HiCurrencyDollar style={{ color: '#81C784' }} /> 
+                        Total: ₹{booking.totalAmount?.toLocaleString()}
+                      </span>
+                    </div>
+
+                    {booking.specialRequests && (
+                      <div style={{ 
+                        marginTop: '15px', 
+                        padding: '10px 16px', 
+                        background: 'rgba(255,255,255,0.01)', 
+                        borderRadius: '12px', 
+                        border: '1px solid rgba(255,255,255,0.03)', 
+                        fontSize: '0.85rem', 
+                        color: '#a3a3c2',
+                        lineHeight: 1.4
+                      }}>
+                        <strong style={{ color: '#C9A84C' }}>Concierge Request:</strong> {booking.specialRequests}
+                      </div>
                     )}
                   </div>
-                </div>
-                <div style={{ width: '50px', height: '50px', minWidth: '50px', borderRadius: '15px', background: 'rgba(201,168,76,0.05)', color: '#C9A84C', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: '1.5rem' }}>
-                  <HiClipboardList />
-                </div>
-              </motion.div>
-            ))
-          ) : (
-            <div style={{ textAlign: 'center', padding: '100px 40px', background: 'rgba(255,255,255,0.01)', borderRadius: '32px', border: '1px dashed rgba(255,255,255,0.05)' }}>
-              <HiClipboardList style={{ fontSize: '60px', color: '#222', marginBottom: '20px' }} />
-              <h4 style={{ fontSize: '1.5rem', color: '#555', marginBottom: '10px' }}>No Event History</h4>
-              <p style={{ color: '#333', marginBottom: '30px' }}>Your journey to an extraordinary event begins here.</p>
-              <button onClick={() => navigate('/contact')} className="btn btn-primary" style={{ padding: '15px 40px' }}>Create Your First Inquiry</button>
-            </div>
-          )}
-        </div>
+                  <div style={{ width: '50px', height: '50px', minWidth: '50px', borderRadius: '15px', background: 'rgba(201,168,76,0.05)', color: '#C9A84C', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: '1.5rem', marginLeft: '15px' }}>
+                    <HiClipboardList />
+                  </div>
+                </motion.div>
+              ))
+            ) : (
+              <div style={{ textAlign: 'center', padding: '100px 40px', background: 'rgba(255,255,255,0.01)', borderRadius: '32px', border: '1px dashed rgba(255,255,255,0.05)' }}>
+                <HiClipboardList style={{ fontSize: '60px', color: '#222', marginBottom: '20px' }} />
+                <h4 style={{ fontSize: '1.5rem', color: '#555', marginBottom: '10px' }}>No VIP Passes Booked</h4>
+                <p style={{ color: '#7a7a99', marginBottom: '30px' }}>Book your VIP passes to exclusive upcoming showcases.</p>
+                <button onClick={() => navigate('/events')} className="btn btn-primary" style={{ padding: '15px 40px' }}>Browse Upcoming Events</button>
+              </div>
+            )}
+          </div>
+        )}
 
         {/* Inquiry Detail Modal */}
         <AnimatePresence>
@@ -343,24 +541,140 @@ const InquiryHistoryPage = () => {
                           <span style={{ color: '#C9A84C', fontWeight: 700 }}>Total Cost</span>
                           <span style={{ color: '#C9A84C', fontWeight: 700 }}>₹{selectedInquiry.billing.totalAmount}</span>
                         </div>
-                        <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: '0.9rem' }}>
-                          <span style={{ color: '#81C784', fontWeight: 600 }}>Amount Paid</span>
-                          <span style={{ color: '#81C784', fontWeight: 600 }}>₹{selectedInquiry.billing.amountPaid}</span>
+                        <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: '0.95rem' }}>
+                          <span style={{ color: '#81C784', fontWeight: 700 }}>Advance Paid Amount</span>
+                          <span style={{ color: '#81C784', fontWeight: 700 }}>₹{selectedInquiry.billing.amountPaid || 0}</span>
                         </div>
-                        {selectedInquiry.billing.totalAmount - selectedInquiry.billing.amountPaid > 0 && (
-                          <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: '0.9rem' }}>
-                            <span style={{ color: '#EF5350' }}>Balance Due</span>
-                            <span style={{ color: '#EF5350', fontWeight: 600 }}>₹{selectedInquiry.billing.totalAmount - selectedInquiry.billing.amountPaid}</span>
-                          </div>
-                        )}
+                        <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: '0.95rem' }}>
+                          <span style={{ color: '#EF5350', fontWeight: 700 }}>Pending Payments</span>
+                          <span style={{ color: '#EF5350', fontWeight: 700 }}>₹{Math.max(0, selectedInquiry.billing.totalAmount - (selectedInquiry.billing.amountPaid || 0))}</span>
+                        </div>
                       </div>
                     </div>
                   )}
 
-                  <div style={{ marginTop: '20px', padding: '20px', background: selectedInquiry.status === 'completed' ? 'rgba(76, 175, 80, 0.1)' : 'rgba(201,168,76,0.05)', borderRadius: '16px', border: `1px solid ${selectedInquiry.status === 'completed' ? '#81C784' : 'rgba(201,168,76,0.1)'}`, display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+                  {(!selectedInquiry.billing || !selectedInquiry.billing.totalAmount) && (
+                    <div style={{ 
+                      marginTop: '25px', 
+                      padding: '24px', 
+                      background: 'linear-gradient(135deg, rgba(201, 168, 76, 0.08), rgba(255, 255, 255, 0.01))', 
+                      borderRadius: '24px', 
+                      border: '1px solid rgba(201, 168, 76, 0.2)',
+                      boxShadow: '0 8px 32px rgba(0,0,0,0.3)'
+                    }}>
+                      <div style={{ 
+                        color: '#C9A84C', 
+                        fontSize: '0.75rem', 
+                        textTransform: 'uppercase', 
+                        letterSpacing: '2px', 
+                        fontWeight: 700, 
+                        marginBottom: '15px', 
+                        borderBottom: '1px solid rgba(201, 168, 76, 0.15)', 
+                        paddingBottom: '8px',
+                        display: 'flex',
+                        alignItems: 'center',
+                        gap: '8px'
+                      }}>
+                        <HiCurrencyDollar /> Payment Overview
+                      </div>
+                      <div style={{ display: 'flex', flexDirection: 'column', gap: '12px' }}>
+                        <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: '0.95rem' }}>
+                          <span style={{ color: '#aaa' }}>Estimated Budget</span>
+                          <span style={{ color: '#fff', fontWeight: 600 }}>{selectedInquiry.budget || 'N/A'}</span>
+                        </div>
+                        <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: '0.95rem' }}>
+                          <span style={{ color: '#81C784', fontWeight: 700 }}>Advance Paid Amount</span>
+                          <span style={{ color: '#81C784', fontWeight: 700 }}>₹{selectedInquiry.billing?.amountPaid || 0}</span>
+                        </div>
+                        <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: '0.95rem' }}>
+                          <span style={{ color: '#EF5350', fontWeight: 700 }}>Pending Payments</span>
+                          <span style={{ color: '#EF5350', fontWeight: 700 }}>₹{Math.max(0, (selectedInquiry.billing?.totalAmount || 0) - (selectedInquiry.billing?.amountPaid || 0))}</span>
+                        </div>
+                      </div>
+                    </div>
+                  )}
+
+                  <div style={{ marginTop: '20px', padding: '20px', background: selectedInquiry.status === 'completed' ? 'rgba(76, 175, 80, 0.1)' : (selectedInquiry.status === 'cancelled' ? 'rgba(239, 83, 80, 0.05)' : 'rgba(201,168,76,0.05)'), borderRadius: '16px', border: `1px solid ${selectedInquiry.status === 'completed' ? '#81C784' : (selectedInquiry.status === 'cancelled' ? '#EF5350' : 'rgba(201,168,76,0.1)')}`, display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
                     <span style={{ color: '#7a7a99', fontSize: '0.85rem' }}>Inquiry Status</span>
-                    <span style={{ color: selectedInquiry.status === 'completed' ? '#81C784' : '#C9A84C', fontWeight: 800, textTransform: 'uppercase', fontSize: '0.85rem' }}>{selectedInquiry.status}</span>
+                    <span style={{ color: selectedInquiry.status === 'completed' ? '#81C784' : (selectedInquiry.status === 'cancelled' ? '#EF5350' : '#C9A84C'), fontWeight: 800, textTransform: 'uppercase', fontSize: '0.85rem' }}>{selectedInquiry.status}</span>
                   </div>
+
+                  {selectedInquiry.status === 'completed' && (
+                    <div style={{
+                      marginTop: '15px',
+                      padding: '15px 20px',
+                      background: (selectedInquiry.billing?.totalAmount > 0 && selectedInquiry.billing?.amountPaid >= selectedInquiry.billing?.totalAmount) 
+                        ? 'rgba(76, 175, 80, 0.1)' 
+                        : 'rgba(239, 83, 80, 0.1)',
+                      borderRadius: '16px',
+                      border: `1px solid ${(selectedInquiry.billing?.totalAmount > 0 && selectedInquiry.billing?.amountPaid >= selectedInquiry.billing?.totalAmount) ? '#81C78430' : '#EF535030'}`,
+                      display: 'flex',
+                      justifyContent: 'space-between',
+                      alignItems: 'center'
+                    }}>
+                      <span style={{ color: '#7a7a99', fontSize: '0.85rem' }}>Payment Status</span>
+                      <span style={{ 
+                        color: (selectedInquiry.billing?.totalAmount > 0 && selectedInquiry.billing?.amountPaid >= selectedInquiry.billing?.totalAmount) ? '#81C784' : '#EF5350', 
+                        fontWeight: 800, 
+                        textTransform: 'uppercase', 
+                        fontSize: '0.85rem' 
+                      }}>
+                        {(selectedInquiry.billing?.totalAmount > 0 && selectedInquiry.billing?.amountPaid >= selectedInquiry.billing?.totalAmount) ? 'Paid' : 'Unpaid'}
+                      </span>
+                    </div>
+                  )}
+
+                  {selectedInquiry.status === 'accepted' && (
+                    <div style={{
+                      marginTop: '15px',
+                      padding: '16px 20px',
+                      background: 'rgba(201, 168, 76, 0.05)',
+                      border: '1px solid rgba(201, 168, 76, 0.2)',
+                      borderRadius: '16px',
+                      color: '#C9A84C',
+                      fontSize: '0.85rem',
+                      display: 'flex',
+                      alignItems: 'center',
+                      gap: '10px',
+                      fontWeight: 600,
+                      lineHeight: 1.4
+                    }}>
+                      <span style={{ fontSize: '1.2rem' }}>⚠️</span>
+                      <span>If you want to cancel, please contact our support team.</span>
+                    </div>
+                  )}
+
+                  {selectedInquiry.status === 'new' && (
+                    <button
+                      onClick={() => handleCancelInquiry(selectedInquiry._id)}
+                      style={{
+                        marginTop: '15px',
+                        width: '100%',
+                        padding: '14px',
+                        background: 'transparent',
+                        color: '#EF5350',
+                        border: '1px solid rgba(239, 83, 80, 0.3)',
+                        borderRadius: '16px',
+                        fontWeight: 600,
+                        cursor: 'pointer',
+                        transition: 'all 0.3s ease',
+                        display: 'flex',
+                        alignItems: 'center',
+                        justifyContent: 'center',
+                        gap: '8px'
+                      }}
+                      onMouseEnter={(e) => {
+                        e.target.style.background = 'rgba(239, 83, 80, 0.08)';
+                        e.target.style.borderColor = '#EF5350';
+                      }}
+                      onMouseLeave={(e) => {
+                        e.target.style.background = 'transparent';
+                        e.target.style.borderColor = 'rgba(239, 83, 80, 0.3)';
+                      }}
+                    >
+                      <HiX /> Cancel Orchestration Request
+                    </button>
+                  )}
 
                   {selectedInquiry.status === 'accepted' && (
                     <div style={{ marginTop: '20px', padding: '25px', background: 'rgba(201,168,76,0.05)', borderRadius: '20px', border: '1px dashed #C9A84C', textAlign: 'center' }}>
@@ -552,8 +866,43 @@ const InquiryHistoryPage = () => {
             </motion.div>
           )}
         </AnimatePresence>
-
       </div>
+
+      {/* Custom Confirmation Modal */}
+      <AnimatePresence>
+        {showConfirmCancel && (
+          <div style={{ position: 'fixed', inset: 0, background: 'rgba(0,0,0,0.85)', backdropFilter: 'blur(10px)', zIndex: 20000, display: 'flex', alignItems: 'flex-start', justifyContent: 'center', padding: '100px 20px' }}>
+            <motion.div 
+              initial={{ opacity: 0, y: -50 }}
+              animate={{ opacity: 1, y: 0 }}
+              exit={{ opacity: 0, y: -50 }}
+              style={{ background: '#111', border: '1px solid rgba(201,168,76,0.3)', borderRadius: '24px', padding: '30px', maxWidth: '400px', width: '100%', textAlign: 'center', boxShadow: '0 20px 40px rgba(0,0,0,0.5)' }}
+            >
+              <h4 style={{ fontFamily: "'Playfair Display', serif", fontSize: '1.5rem', color: '#fff', marginBottom: '15px' }}>Confirm Cancellation</h4>
+              <p style={{ color: '#7a7a99', fontSize: '0.9rem', lineHeight: 1.5, marginBottom: '25px' }}>
+                Are you absolutely sure you want to cancel this orchestration request? This action will alert our concierge and network partners.
+              </p>
+              <div style={{ display: 'flex', gap: '15px', justifyContent: 'center' }}>
+                <button 
+                  onClick={() => { setShowConfirmCancel(false); setCancelTargetId(null); }}
+                  style={{ padding: '12px 24px', background: 'rgba(255,255,255,0.05)', border: 'none', color: '#fff', borderRadius: '12px', fontWeight: 600, cursor: 'pointer' }}
+                >
+                  Cancel
+                </button>
+                <button 
+                  onClick={() => {
+                    setShowConfirmCancel(false);
+                    confirmCancelInquiry(cancelTargetId);
+                  }}
+                  style={{ padding: '12px 24px', background: '#EF5350', border: 'none', color: '#fff', borderRadius: '12px', fontWeight: 600, cursor: 'pointer' }}
+                >
+                  Yes, Cancel Request
+                </button>
+              </div>
+            </motion.div>
+          </div>
+        )}
+      </AnimatePresence>
     </div>
   );
 };

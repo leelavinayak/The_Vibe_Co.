@@ -130,79 +130,122 @@ const ContactPage = () => {
             <p>Fill in the details below and our team will craft a personalized proposal for you.</p>
           </motion.div>
 
-          <motion.form initial="hidden" whileInView="visible" viewport={{ once: true }} variants={fadeUp}
-            onSubmit={handleSubmit}
-            style={{ background: 'linear-gradient(145deg, rgba(26,26,26,0.9), rgba(17,17,17,0.95))', border: '1px solid rgba(201,168,76,0.15)', borderRadius: '20px', padding: 'clamp(28px, 5vw, 48px)' }}>
-
-            <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(260px, 1fr))', gap: '20px' }}>
-              <div className="form-group">
-                <label className="form-label">Full Name *</label>
-                <input className="form-input" name="name" value={form.name} onChange={handleChange} placeholder="Your full name" required />
-              </div>
-              <div className="form-group">
-                <label className="form-label">Email *</label>
-                <input className="form-input" type="email" name="email" value={form.email} onChange={handleChange} placeholder="your@email.com" required />
-              </div>
-              <div className="form-group">
-                <label className="form-label">Phone</label>
-                <input className="form-input" name="phone" value={form.phone} onChange={handleChange} placeholder="+91 XXXXX XXXXX" />
-              </div>
-              <div className="form-group">
-                <label className="form-label">Event Type *</label>
-                <select className="form-input" name="eventType" value={form.eventType} onChange={handleChange} required>
-                  {eventTypes.map(t => (
-                    <option key={t} value={t}>
-                      {t.split('_').map(word => word.charAt(0).toUpperCase() + word.slice(1)).join(' ')}
-                    </option>
-                  ))}
-                </select>
-              </div>
-              <div className="form-group">
-                <label className="form-label">Budget Range</label>
-                <input className="form-input" name="budget" value={form.budget} onChange={handleChange} placeholder="e.g. ₹5L - ₹10L" />
-              </div>
-              <div className="form-group">
-                <label className="form-label">Event Date</label>
-                <input className="form-input" type="date" name="eventDate" value={form.eventDate} onChange={handleChange} />
-              </div>
-            </div>
-            <div className="form-group">
-              <label className="form-label">Tell Us About Your Vision *</label>
-              <textarea className="form-input" name="message" value={form.message} onChange={handleChange} placeholder="Describe your dream event — theme, guest count, special requirements..." required style={{ minHeight: '140px' }} />
-            </div>
-
-            {error && (
-              <div style={{ padding: '15px', background: 'rgba(255,68,68,0.1)', border: '1px solid rgba(255,68,68,0.2)', color: '#ff6b6b', borderRadius: '12px', marginBottom: '20px', fontSize: '0.9rem', textAlign: 'center' }}>
-                {error}
-              </div>
-            )}
-            {form.eventType !== 'total_event_organisation' && !form.service ? (
-              <div style={{ 
-                background: 'rgba(239, 83, 80, 0.06)', 
-                border: '1px dashed rgba(239, 83, 80, 0.3)', 
-                borderRadius: '16px', 
-                padding: '24px', 
-                textAlign: 'center', 
-                marginBottom: '20px',
-                boxShadow: '0 8px 32px rgba(0,0,0,0.2)'
+          {user?.role === 'provider' ? (
+            <motion.div
+              initial="hidden"
+              whileInView="visible"
+              viewport={{ once: true }}
+              variants={fadeUp}
+              style={{
+                background: 'linear-gradient(145deg, rgba(26,26,26,0.9), rgba(17,17,17,0.95))',
+                border: '1px solid rgba(239, 83, 80, 0.3)',
+                borderRadius: '20px',
+                padding: '40px',
+                textAlign: 'center',
+                boxShadow: '0 10px 30px rgba(0,0,0,0.3)',
+                fontFamily: "'Outfit', sans-serif"
+              }}
+            >
+              <div style={{
+                width: '70px',
+                height: '70px',
+                borderRadius: '50%',
+                background: 'rgba(239, 83, 80, 0.1)',
+                color: '#EF5350',
+                display: 'flex',
+                alignItems: 'center',
+                justifyContent: 'center',
+                margin: '0 auto 20px',
+                border: '1px solid rgba(239, 83, 80, 0.2)',
+                fontSize: '2rem'
               }}>
-                <div style={{ color: '#EF5350', fontWeight: 800, fontSize: '1rem', marginBottom: '8px', letterSpacing: '1px', textTransform: 'uppercase' }}>
-                  ⚠️ Service Member Required
-                </div>
-                <p style={{ color: '#9999b3', fontSize: '0.88rem', margin: '0 0 20px 0', lineHeight: 1.6 }}>
-                  To book individual service categories (Weddings, Catering, Photography, etc.), you must first select a specific professional service member from our verified roster.
-                </p>
-                <Link to="/services" className="btn btn-outline" style={{ display: 'inline-flex', padding: '12px 28px', fontSize: '0.85rem', fontWeight: 700 }}>
-                  Go and select your service member in the service page
-                </Link>
+                ⚠️
               </div>
-            ) : (
-              <button type="submit" className="btn btn-primary" disabled={loading}
-                style={{ width: '100%', padding: '16px', fontSize: '1rem', marginTop: '8px', opacity: loading ? 0.7 : 1 }}>
-                {loading ? 'Sending...' : 'Submit Inquiry'}
-              </button>
-            )}
-          </motion.form>
+              <h3 style={{ fontFamily: "'Playfair Display', serif", fontSize: '1.8rem', color: '#fff', marginBottom: '15px' }}>
+                Booking Restricted
+              </h3>
+              <p style={{ color: '#9999b3', lineHeight: 1.8, fontSize: '1.05rem', maxWidth: '500px', margin: '0 auto 30px' }}>
+                Service member cannot book the service. They need to book with their personal accounts like as a user.
+              </p>
+              <Link to="/services" className="btn btn-outline" style={{ display: 'inline-block', padding: '12px 30px', fontWeight: 600 }}>
+                Return to Services
+              </Link>
+            </motion.div>
+          ) : (
+            <motion.form initial="hidden" whileInView="visible" viewport={{ once: true }} variants={fadeUp}
+              onSubmit={handleSubmit}
+              style={{ background: 'linear-gradient(145deg, rgba(26,26,26,0.9), rgba(17,17,17,0.95))', border: '1px solid rgba(201,168,76,0.15)', borderRadius: '20px', padding: 'clamp(28px, 5vw, 48px)' }}>
+
+              <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(260px, 1fr))', gap: '20px' }}>
+                <div className="form-group">
+                  <label className="form-label">Full Name *</label>
+                  <input className="form-input" name="name" value={form.name} onChange={handleChange} placeholder="Your full name" required />
+                </div>
+                <div className="form-group">
+                  <label className="form-label">Email *</label>
+                  <input className="form-input" type="email" name="email" value={form.email} onChange={handleChange} placeholder="your@email.com" required />
+                </div>
+                <div className="form-group">
+                  <label className="form-label">Phone</label>
+                  <input className="form-input" name="phone" value={form.phone} onChange={handleChange} placeholder="+91 XXXXX XXXXX" />
+                </div>
+                <div className="form-group">
+                  <label className="form-label">Event Type *</label>
+                  <select className="form-input" name="eventType" value={form.eventType} onChange={handleChange} required>
+                    {eventTypes.map(t => (
+                      <option key={t} value={t}>
+                        {t.split('_').map(word => word.charAt(0).toUpperCase() + word.slice(1)).join(' ')}
+                      </option>
+                    ))}
+                  </select>
+                </div>
+                <div className="form-group">
+                  <label className="form-label">Budget Range</label>
+                  <input className="form-input" name="budget" value={form.budget} onChange={handleChange} placeholder="e.g. ₹5L - ₹10L" />
+                </div>
+                <div className="form-group">
+                  <label className="form-label">Event Date</label>
+                  <input className="form-input" type="date" name="eventDate" value={form.eventDate} onChange={handleChange} />
+                </div>
+              </div>
+              <div className="form-group">
+                <label className="form-label">Tell Us About Your Vision *</label>
+                <textarea className="form-input" name="message" value={form.message} onChange={handleChange} placeholder="Describe your dream event — theme, guest count, special requirements..." required style={{ minHeight: '140px' }} />
+              </div>
+
+              {error && (
+                <div style={{ padding: '15px', background: 'rgba(255,68,68,0.1)', border: '1px solid rgba(255,68,68,0.2)', color: '#ff6b6b', borderRadius: '12px', marginBottom: '20px', fontSize: '0.9rem', textAlign: 'center' }}>
+                  {error}
+                </div>
+              )}
+              {form.eventType !== 'total_event_organisation' && !form.service ? (
+                <div style={{ 
+                  background: 'rgba(239, 83, 80, 0.06)', 
+                  border: '1px dashed rgba(239, 83, 80, 0.3)', 
+                  borderRadius: '16px', 
+                  padding: '24px', 
+                  textAlign: 'center', 
+                  marginBottom: '20px',
+                  boxShadow: '0 8px 32px rgba(0,0,0,0.2)'
+                }}>
+                  <div style={{ color: '#EF5350', fontWeight: 800, fontSize: '1rem', marginBottom: '8px', letterSpacing: '1px', textTransform: 'uppercase' }}>
+                    ⚠️ Service Member Required
+                  </div>
+                  <p style={{ color: '#9999b3', fontSize: '0.88rem', margin: '0 0 20px 0', lineHeight: 1.6 }}>
+                    To book individual service categories (Weddings, Catering, Photography, etc.), you must first select a specific professional service member from our verified roster.
+                  </p>
+                  <Link to="/services" className="btn btn-outline" style={{ display: 'inline-flex', padding: '12px 28px', fontSize: '0.85rem', fontWeight: 700 }}>
+                    Go and select your service member in the service page
+                  </Link>
+                </div>
+              ) : (
+                <button type="submit" className="btn btn-primary" disabled={loading}
+                  style={{ width: '100%', padding: '16px', fontSize: '1rem', marginTop: '8px', opacity: loading ? 0.7 : 1 }}>
+                  {loading ? 'Sending...' : 'Submit Inquiry'}
+                </button>
+              )}
+            </motion.form>
+          )}
         </div>
       </section>
     </div>

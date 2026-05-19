@@ -178,147 +178,329 @@ const updateInquiryStatus = async (req, res) => {
 
       const updatedInquiry = await inquiry.save();
 
-      // Notify user if budget changed
-      if (oldBudget !== inquiry.budget && inquiry.user) {
-        const Notification = require('../models/Notification');
-        await Notification.create({
-          recipient: inquiry.user,
-          type: 'status_update',
-          title: 'Budget Updated',
-          message: `The budget for your ${inquiry.eventType} booking has been updated to ${inquiry.budget}.`
-        });
-      }
+      // Return response immediately to client for instant UI response
+      res.json(updatedInquiry);
 
-      // Send notifications if status changed
-      if (oldStatus !== inquiry.status) {
+      // Perform all heavy notification, PDF generation, email and WhatsApp side-effects in the background
+      (async () => {
         try {
-          const sendEmail = require('../services/emailService');
-          const sendWhatsAppMessage = require('../services/whatsappService');
-
-          const statusColor = inquiry.status === 'accepted' ? '#28a745' :
-            inquiry.status === 'rejected' ? '#dc3545' :
-              inquiry.status === 'completed' ? '#4FC3F7' : '#C9A84C';
-
-          const isCompleted = inquiry.status === 'completed';
-          const isRejected = inquiry.status === 'rejected';
-
-          // Send Status Update Email
-          await sendEmail({
-            email: inquiry.email,
-            subject: `Update on your Inquiry: ${inquiry.eventType.toUpperCase()} - THE VIBE CO.`,
-            message: `Hello ${inquiry.name}, the status of your inquiry for ${inquiry.eventType} has been updated to ${inquiry.status}.`,
-            html: `
-              <div style="font-family: Arial, sans-serif; padding: 20px; color: #333; border: 1px solid #C9A84C; border-radius: 10px;">
-                <h2 style="color: #C9A84C;">${isCompleted ? 'Event Completed Successfully!' : (isRejected ? 'Update Regarding Your Inquiry' : 'Inquiry Status Update')}</h2>
-                <p>Hello <strong>${inquiry.name}</strong>,</p>
-                <p>${isCompleted ? 'Your event has been completed successfully! We hope you had an extraordinary experience with THE VIBE CO.' : `The status of your inquiry for <strong>${inquiry.eventType}</strong> has been updated by our team.`}</p>
-                <div style="background: #f8f9fa; padding: 15px; border-radius: 5px; margin: 20px 0; border-left: 5px solid ${statusColor};">
-                  <p style="margin: 0; font-size: 1.1rem;">Status: <strong style="color: ${statusColor}; text-transform: uppercase;">${inquiry.status}</strong></p>
-                  ${isRejected && inquiry.rejectionReason ? `<p style="margin: 10px 0 0 0; color: #555;"><strong>Reason:</strong> ${inquiry.rejectionReason}</p>` : ''}
-                </div>
-                ${isCompleted ? `
-                <div style="margin: 20px 0; padding: 15px; background: rgba(201,168,76,0.05); border-radius: 10px; border: 1px dashed #C9A84C;">
-                  <p style="margin: 0 0 10px 0;"><strong>We value your feedback!</strong></p>
-                  <p style="margin: 0; font-size: 0.9rem;">Could you please take a moment to share your review for both our <strong>website</strong> and the <strong>service member</strong>? Your feedback helps us maintain our elite standards.</p>
-                  <p style="margin: 15px 0 0 0;"><a href="${process.env.FRONTEND_URL}/history" style="background: #C9A84C; color: #fff; padding: 10px 20px; text-decoration: none; border-radius: 5px; font-weight: bold; display: inline-block;">Give Your Review</a></p>
-                </div>
-                ` : (isRejected ? '<p>We appreciate your interest in THE VIBE CO. and hope to serve you at another time.</p>' : '<p>If you have any questions, feel free to contact us.</p>')}
-                <div style="margin-top: 20px; padding-top: 20px; border-top: 1px solid #eee;">
-                  <p style="font-size: 0.8rem; color: #777;">Best Regards,<br/>The Vibe Co. Team</p>
-                </div>
-              </div>
-            `
-          });
-
-          // Send Status Update WhatsApp/SMS
-          if (inquiry.phone) {
-            let waMsg = isCompleted
-              ? `Hello ${inquiry.name}, your event has been COMPLETED successfully! 🥂 We'd love to hear your feedback on our website and the service member. Please visit your history to leave a review. - THE VIBE CO.`
-              : `Hello ${inquiry.name}, your inquiry for ${inquiry.eventType} has been updated to ${inquiry.status.toUpperCase()}. Check your email for more details. - THE VIBE CO.`;
-
-            if (isRejected && inquiry.rejectionReason) {
-              waMsg = `Hello ${inquiry.name}, your inquiry for ${inquiry.eventType} was unfortunately declined. Reason: ${inquiry.rejectionReason}. Check your email for more details. - THE VIBE CO.`;
-            }
-
-            await sendWhatsAppMessage(inquiry.phone, waMsg);
-          }
-
-          // Create internal notification for user
-          const Notification = require('../models/Notification');
-          if (inquiry.user) {
+          // Notify user if budget changed
+          if (oldBudget !== inquiry.budget && inquiry.user) {
+            const Notification = require('../models/Notification');
             await Notification.create({
               recipient: inquiry.user,
               type: 'status_update',
-              title: 'Inquiry Status Update',
-              message: `The status of your inquiry for ${inquiry.eventType} has been updated to ${inquiry.status.toUpperCase()}.`
+              title: 'Budget Updated',
+              message: `The budget for your ${inquiry.eventType} booking has been updated to ${inquiry.budget}.`
             });
           }
 
-          // Notify Admin about status change
-          const admins = await User.find({ role: 'admin' });
-          for (const adminUser of admins) {
-            await Notification.create({
-              recipient: adminUser._id,
-              type: 'status_update',
-              title: 'Booking Status Changed',
-              message: `Inquiry for ${inquiry.eventType} from ${inquiry.name} was ${inquiry.status.toUpperCase()} by the service provider.`
-            });
-          }
+          // Send notifications if status changed
+          if (oldStatus !== inquiry.status) {
+            const sendEmail = require('../services/emailService');
+            const sendWhatsAppMessage = require('../services/whatsappService');
 
-          // Send admin email about status change
-          const adminEmail = process.env.ADMIN_EMAIL || 'admin@thevibeco.com';
-          await sendEmail({
-            email: adminEmail,
-            subject: `Booking ${inquiry.status.toUpperCase()}: ${inquiry.eventType} - ${inquiry.name}`,
-            message: `Inquiry from ${inquiry.name} for ${inquiry.eventType} has been ${inquiry.status} by the service provider.`,
-            html: `
-              <div style="font-family: Arial, sans-serif; padding: 20px; border: 1px solid #C9A84C; border-radius: 10px;">
-                <h2 style="color: #C9A84C;">Booking Status Update</h2>
-                <p>A service provider has updated a booking status:</p>
-                <p><strong>Client:</strong> ${inquiry.name}</p>
-                <p><strong>Event:</strong> ${inquiry.eventType}</p>
-                <p><strong>New Status:</strong> <span style="color: ${statusColor}; font-weight: bold; text-transform: uppercase;">${inquiry.status}</span></p>
-                ${inquiry.rejectionReason ? `<p><strong>Rejection Reason:</strong> ${inquiry.rejectionReason}</p>` : ''}
-                <p style="font-size: 0.8rem; color: #777; margin-top: 20px;">THE VIBE CO. Admin Notification</p>
-              </div>
-            `
-          });
+            const statusColor = inquiry.status === 'accepted' ? '#28a745' :
+              inquiry.status === 'rejected' ? '#dc3545' :
+                inquiry.status === 'completed' ? '#4FC3F7' : '#C9A84C';
 
-          // Send admin WhatsApp
-          const adminPhone = process.env.ADMIN_PHONE || '';
-          if (adminPhone) {
-            await sendWhatsAppMessage(
-              adminPhone,
-              `📋 Booking Update: ${inquiry.name}'s ${inquiry.eventType} inquiry has been ${inquiry.status.toUpperCase()} by the provider.${inquiry.rejectionReason ? ' Reason: ' + inquiry.rejectionReason : ''} - THE VIBE CO.`
-            );
-          }
+            const isCompleted = inquiry.status === 'completed';
+            const isRejected = inquiry.status === 'rejected';
 
-          // Notify the Provider who made the action
-          if (inquiry.service) {
-            const providerUser = await User.findOne({ serviceId: inquiry.service, role: 'provider' });
-            if (providerUser) {
-              await Notification.create({
-                recipient: providerUser._id,
-                type: 'status_update',
-                title: `You ${inquiry.status} a booking`,
-                message: `You have ${inquiry.status} the ${inquiry.eventType} booking from ${inquiry.name}.`
+            if (isCompleted) {
+              const { generatePDFBuffer } = require('../services/pdfService');
+              const fs = require('fs');
+              const path = require('path');
+
+              // Find provider user if there is a service
+              let providerUser = null;
+              if (inquiry.service) {
+                providerUser = await User.findOne({ serviceId: inquiry.service, role: 'provider' });
+              }
+
+              const actualProvider = providerUser || {
+                name: 'THE VIBE CO. Admin',
+                email: 'admin@thevibeco.com',
+                phone: '8523086151'
+              };
+
+              // Generate premium receipt/dossier PDFs
+              const userPdfBuffer = await generatePDFBuffer(inquiry, actualProvider, true);
+              const providerPdfBuffer = await generatePDFBuffer(inquiry, actualProvider, false);
+
+              // Ensure uploads directory exists
+              const uploadsDir = path.join(__dirname, '../uploads');
+              if (!fs.existsSync(uploadsDir)) {
+                fs.mkdirSync(uploadsDir, { recursive: true });
+              }
+
+              // Save PDF receipt files to the static uploads folder
+              const userFileName = `Receipt_${inquiry._id}_User.pdf`;
+              const userFilePath = path.join(uploadsDir, userFileName);
+              fs.writeFileSync(userFilePath, userPdfBuffer);
+              const userPdfUrl = `${process.env.FRONTEND_URL || 'http://localhost:3000'}/uploads/${userFileName}`;
+
+              const providerFileName = `Receipt_${inquiry._id}_Provider.pdf`;
+              const providerFilePath = path.join(uploadsDir, providerFileName);
+              fs.writeFileSync(providerFilePath, providerPdfBuffer);
+              const providerPdfUrl = `${process.env.FRONTEND_URL || 'http://localhost:3000'}/uploads/${providerFileName}`;
+
+              const totalAmount = (inquiry.billing && inquiry.billing.totalAmount) 
+                ? inquiry.billing.totalAmount 
+                : (inquiry.finalPrice || parseFloat(inquiry.budget.replace(/[^0-9.]/g, '')) || 0);
+
+              // 1. Send Ultra-Premium Completion Email to User with PDF attachment
+              await sendEmail({
+                email: inquiry.email,
+                subject: `⚜️ Event Completed Successfully - Receipt & Invoice - THE VIBE CO.`,
+                message: `Dear ${inquiry.name}, your event has been completed. Please find your invoice receipt attached.`,
+                html: `
+                  <div style="background-color: #050505; color: #d4d4e6; font-family: 'Playfair Display', 'Didot', 'Georgia', serif; padding: 40px 20px; text-align: center; border: 1px solid #C9A84C; border-radius: 12px; max-width: 600px; margin: 0 auto; box-shadow: 0 10px 30px rgba(0,0,0,0.5);">
+                    <div style="margin-bottom: 20px;">
+                      <span style="font-size: 32px; font-weight: bold; color: #C9A84C; letter-spacing: 6px;">THE VIBE CO.</span>
+                      <div style="font-size: 8px; font-family: 'Outfit', 'Helvetica', sans-serif; color: #7a7a99; letter-spacing: 3px; margin-top: 5px; text-transform: uppercase;">The Pinnacle of Luxury Event Orchestration</div>
+                    </div>
+                    
+                    <div style="border-top: 1px solid rgba(201, 168, 76, 0.2); border-bottom: 1px solid rgba(201, 168, 76, 0.2); padding: 30px 0; margin: 30px 0;">
+                      <h1 style="color: #C9A84C; font-size: 24px; font-weight: normal; letter-spacing: 2px; margin: 0 0 15px 0; text-transform: uppercase;">Event Completed Successfully</h1>
+                      <p style="font-size: 16px; line-height: 1.6; color: #ffffff; font-family: 'Outfit', sans-serif; margin: 0 0 20px 0;">Dear <strong>${inquiry.name}</strong>,</p>
+                      <p style="font-size: 14px; line-height: 1.8; color: #a3a3c2; font-family: 'Outfit', sans-serif; margin: 0; text-align: justify;">
+                        We are delighted to confirm that your premium <strong>${inquiry.eventType.toUpperCase()}</strong> orchestration is successfully concluded. It has been an absolute privilege for <strong>THE VIBE CO.</strong> and our elite network partner, <strong>${actualProvider.name}</strong>, to bring your vision to life.
+                      </p>
+                    </div>
+
+                    <div style="background: rgba(255,255,255,0.03); padding: 25px; border-radius: 8px; border: 1px solid rgba(201, 168, 76, 0.15); margin-bottom: 30px; text-align: left; font-family: 'Outfit', sans-serif;">
+                      <h3 style="color: #C9A84C; font-family: 'Playfair Display', serif; font-size: 16px; margin: 0 0 15px 0; letter-spacing: 1px; text-transform: uppercase; border-bottom: 1px solid rgba(201, 168, 76, 0.1); padding-bottom: 5px;">Dossier & Settlement Summary</h3>
+                      <table style="width: 100%; border-collapse: collapse; font-size: 14px; color: #d4d4e6;">
+                        <tr>
+                          <td style="padding: 6px 0; color: #7a7a99;">Event Orchestrated</td>
+                          <td style="padding: 6px 0; text-align: right; color: #ffffff; font-weight: bold;">${inquiry.eventType.toUpperCase()}</td>
+                        </tr>
+                        <tr>
+                          <td style="padding: 6px 0; color: #7a7a99;">Execution Date</td>
+                          <td style="padding: 6px 0; text-align: right; color: #ffffff;">${inquiry.eventDate ? new Date(inquiry.eventDate).toLocaleDateString('en-US', { month: 'long', day: 'numeric', year: 'numeric' }) : 'TBD'}</td>
+                        </tr>
+                        <tr>
+                          <td style="padding: 6px 0; color: #7a7a99;">Service Provider</td>
+                          <td style="padding: 6px 0; text-align: right; color: #C9A84C;">${actualProvider.name}</td>
+                        </tr>
+                        <tr style="border-top: 1px solid rgba(201, 168, 76, 0.1); margin-top: 10px;">
+                          <td style="padding: 12px 0 6px 0; color: #C9A84C; font-weight: bold; font-size: 15px;">TOTAL COST</td>
+                          <td style="padding: 12px 0 6px 0; text-align: right; color: #C9A84C; font-weight: bold; font-size: 16px;">Rs. ${totalAmount.toLocaleString()}</td>
+                        </tr>
+                      </table>
+                    </div>
+
+                    <div style="margin: 30px 0;">
+                      <p style="font-family: 'Outfit', sans-serif; font-size: 14px; color: #a3a3c2; margin-bottom: 20px;">
+                        Attached to this email, you will find your official luxury **Invoice Receipt Dossier** in PDF format containing complete itemized charges and partner details.
+                      </p>
+                      <a href="${process.env.FRONTEND_URL || 'http://localhost:3000'}/history" style="background: linear-gradient(90deg, #C9A84C, #E6C667); color: #050505; font-family: 'Outfit', sans-serif; text-transform: uppercase; font-size: 12px; font-weight: bold; letter-spacing: 2px; padding: 14px 30px; text-decoration: none; border-radius: 6px; display: inline-block; box-shadow: 0 4px 15px rgba(201, 168, 76, 0.3);">
+                        Review Your Experience
+                      </a>
+                    </div>
+
+                    <div style="margin-top: 40px; padding-top: 20px; border-top: 1px solid rgba(255,255,255,0.05);">
+                      <p style="font-size: 11px; font-family: 'Playfair Display', serif; font-style: italic; color: #C9A84C; letter-spacing: 2px; margin: 0 0 5px 0;">Experience the Extraordinary</p>
+                      <p style="font-size: 9px; font-family: 'Outfit', sans-serif; color: #555577; margin: 0; text-transform: uppercase;">THE VIBE CO. Selection Committee & Execu-Team</p>
+                    </div>
+                  </div>
+                `,
+                attachments: [
+                  {
+                    filename: `Invoice_Receipt_${inquiry.name.replace(/\s+/g, '_')}.pdf`,
+                    content: userPdfBuffer
+                  }
+                ]
               });
 
-              // WhatsApp confirmation to provider
-              if (providerUser.phone) {
-                await sendWhatsAppMessage(
-                  providerUser.phone,
-                  `✅ Confirmation: You have ${inquiry.status.toUpperCase()} the ${inquiry.eventType} booking from ${inquiry.name}. - THE VIBE CO.`
-                );
+              // 2. Send Ultra-Premium Completion Email to Provider with PDF attachment
+              if (providerUser) {
+                await sendEmail({
+                  email: providerUser.email,
+                  subject: `⚜️ Booking Concluded - Client Work Dossier - THE VIBE CO.`,
+                  message: `Dear ${providerUser.name}, your event booking has been completed. Client dossier details are attached.`,
+                  html: `
+                    <div style="background-color: #050505; color: #d4d4e6; font-family: 'Playfair Display', 'Didot', 'Georgia', serif; padding: 40px 20px; text-align: center; border: 1px solid #C9A84C; border-radius: 12px; max-width: 600px; margin: 0 auto; box-shadow: 0 10px 30px rgba(0,0,0,0.5);">
+                      <div style="margin-bottom: 20px;">
+                        <span style="font-size: 32px; font-weight: bold; color: #C9A84C; letter-spacing: 6px;">THE VIBE CO.</span>
+                        <div style="font-size: 8px; font-family: 'Outfit', 'Helvetica', sans-serif; color: #7a7a99; letter-spacing: 3px; margin-top: 5px; text-transform: uppercase;">The Pinnacle of Luxury Event Orchestration</div>
+                      </div>
+                      
+                      <div style="border-top: 1px solid rgba(201, 168, 76, 0.2); border-bottom: 1px solid rgba(201, 168, 76, 0.2); padding: 30px 0; margin: 30px 0;">
+                        <h1 style="color: #C9A84C; font-size: 24px; font-weight: normal; letter-spacing: 2px; margin: 0 0 15px 0; text-transform: uppercase;">Client Dossier Concluded</h1>
+                        <p style="font-size: 16px; line-height: 1.6; color: #ffffff; font-family: 'Outfit', sans-serif; margin: 0 0 20px 0;">Dear <strong>${providerUser.name}</strong>,</p>
+                        <p style="font-size: 14px; line-height: 1.8; color: #a3a3c2; font-family: 'Outfit', sans-serif; margin: 0; text-align: justify;">
+                          Congratulations on successfully concluding the premium event booking for <strong>${inquiry.name}</strong>. Thank you for maintaining the elite service standards of <strong>THE VIBE CO.</strong> partner network.
+                        </p>
+                      </div>
+
+                      <div style="background: rgba(255,255,255,0.03); padding: 25px; border-radius: 8px; border: 1px solid rgba(201, 168, 76, 0.15); margin-bottom: 30px; text-align: left; font-family: 'Outfit', sans-serif;">
+                        <h3 style="color: #C9A84C; font-family: 'Playfair Display', serif; font-size: 16px; margin: 0 0 15px 0; letter-spacing: 1px; text-transform: uppercase; border-bottom: 1px solid rgba(201, 168, 76, 0.1); padding-bottom: 5px;">Client & Settlement Details</h3>
+                        <table style="width: 100%; border-collapse: collapse; font-size: 14px; color: #d4d4e6;">
+                          <tr>
+                            <td style="padding: 6px 0; color: #7a7a99;">Client Name</td>
+                            <td style="padding: 6px 0; text-align: right; color: #ffffff; font-weight: bold;">${inquiry.name}</td>
+                          </tr>
+                          <tr>
+                            <td style="padding: 6px 0; color: #7a7a99;">Client Phone</td>
+                            <td style="padding: 6px 0; text-align: right; color: #ffffff;">${inquiry.phone || 'N/A'}</td>
+                          </tr>
+                          <tr>
+                            <td style="padding: 6px 0; color: #7a7a99;">Client Email</td>
+                            <td style="padding: 6px 0; text-align: right; color: #ffffff;">${inquiry.email}</td>
+                          </tr>
+                          <tr style="border-top: 1px solid rgba(201, 168, 76, 0.1); margin-top: 10px;">
+                            <td style="padding: 12px 0 6px 0; color: #C9A84C; font-weight: bold; font-size: 15px;">TOTAL SETTLED OUTLAY</td>
+                            <td style="padding: 12px 0 6px 0; text-align: right; color: #C9A84C; font-weight: bold; font-size: 16px;">Rs. ${totalAmount.toLocaleString()}</td>
+                          </tr>
+                        </table>
+                      </div>
+
+                      <div style="margin: 30px 0;">
+                        <p style="font-family: 'Outfit', sans-serif; font-size: 14px; color: #a3a3c2; margin-bottom: 20px;">
+                          Attached is your official **Client Work Dossier** in PDF format containing itemized services and client information.
+                        </p>
+                        <a href="${process.env.FRONTEND_URL || 'http://localhost:3000'}/dashboard" style="background: linear-gradient(90deg, #C9A84C, #E6C667); color: #050505; font-family: 'Outfit', sans-serif; text-transform: uppercase; font-size: 12px; font-weight: bold; letter-spacing: 2px; padding: 14px 30px; text-decoration: none; border-radius: 6px; display: inline-block; box-shadow: 0 4px 15px rgba(201, 168, 76, 0.3);">
+                          Go to Partner Dashboard
+                        </a>
+                      </div>
+
+                      <div style="margin-top: 40px; padding-top: 20px; border-top: 1px solid rgba(255,255,255,0.05);">
+                        <p style="font-size: 11px; font-family: 'Playfair Display', serif; font-style: italic; color: #C9A84C; letter-spacing: 2px; margin: 0 0 5px 0;">Partnering for Excellence</p>
+                        <p style="font-size: 9px; font-family: 'Outfit', sans-serif; color: #555577; margin: 0; text-transform: uppercase;">THE VIBE CO. Selection Committee & Execu-Team</p>
+                      </div>
+                    </div>
+                  `,
+                  attachments: [
+                    {
+                      filename: `Client_Dossier_${inquiry.name.replace(/\s+/g, '_')}.pdf`,
+                      content: providerPdfBuffer
+                    }
+                  ]
+                });
+              }
+
+              // 3. Send User completion WhatsApp with dynamic PDF Receipt Link
+              if (inquiry.phone) {
+                const userWaMsg = `*THE VIBE CO.* ⚜️\n\n*Event Completed Successfully!* 🥂\n\nHello ${inquiry.name}, your event has been completed. We hope you had an extraordinary experience!\n\n💰 *Total Cost:* Rs. ${totalAmount.toLocaleString()}\n👤 *Service Member:* ${actualProvider.name}\n\nDownload your luxury *Invoice Receipt PDF* directly here:\n${userPdfUrl}\n\nWe'd love to hear your feedback! Please visit: ${process.env.FRONTEND_URL || 'http://localhost:3000'}/history to leave a review.`;
+                await sendWhatsAppMessage(inquiry.phone, userWaMsg);
+              }
+
+              // 4. Send Provider completion WhatsApp with dynamic PDF Work Dossier Link
+              if (actualProvider.phone && actualProvider.role === 'provider') {
+                const providerWaMsg = `*THE VIBE CO. PARTNER* ⚜️\n\n*Client Dossier Concluded!* ✅\n\nHello ${actualProvider.name}, the event booking for ${inquiry.name} has been marked as COMPLETED.\n\n💰 *Total Settled Outlay:* Rs. ${totalAmount.toLocaleString()}\n👤 *Client:* ${inquiry.name}\n\nDownload your *Client Work Dossier PDF* directly here:\n${providerPdfUrl}\n\nThank you for maintaining our elite service standards! - THE VIBE CO.`;
+                await sendWhatsAppMessage(actualProvider.phone, providerWaMsg);
+              }
+            } else {
+              // Send Standard status update emails and WhatsApps
+              // Send Status Update Email
+              await sendEmail({
+                email: inquiry.email,
+                subject: `Update on your Inquiry: ${inquiry.eventType.toUpperCase()} - THE VIBE CO.`,
+                message: `Hello ${inquiry.name}, the status of your inquiry for ${inquiry.eventType} has been updated to ${inquiry.status}.`,
+                html: `
+                  <div style="font-family: Arial, sans-serif; padding: 20px; color: #333; border: 1px solid #C9A84C; border-radius: 10px;">
+                    <h2 style="color: #C9A84C;">${isRejected ? 'Update Regarding Your Inquiry' : 'Inquiry Status Update'}</h2>
+                    <p>Hello <strong>${inquiry.name}</strong>,</p>
+                    <p>The status of your inquiry for <strong>${inquiry.eventType}</strong> has been updated by our team.</p>
+                    <div style="background: #f8f9fa; padding: 15px; border-radius: 5px; margin: 20px 0; border-left: 5px solid ${statusColor};">
+                      <p style="margin: 0; font-size: 1.1rem;">Status: <strong style="color: ${statusColor}; text-transform: uppercase;">${inquiry.status}</strong></p>
+                      ${isRejected && inquiry.rejectionReason ? `<p style="margin: 10px 0 0 0; color: #555;"><strong>Reason:</strong> ${inquiry.rejectionReason}</p>` : ''}
+                    </div>
+                    ${isRejected ? '<p>We appreciate your interest in THE VIBE CO. and hope to serve you at another time.</p>' : '<p>If you have any questions, feel free to contact us.</p>'}
+                    <div style="margin-top: 20px; padding-top: 20px; border-top: 1px solid #eee;">
+                      <p style="font-size: 0.8rem; color: #777;">Best Regards,<br/>The Vibe Co. Team</p>
+                    </div>
+                  </div>
+                `
+              });
+
+              // Send Status Update WhatsApp/SMS
+              if (inquiry.phone) {
+                let waMsg = `Hello ${inquiry.name}, your inquiry for ${inquiry.eventType} has been updated to ${inquiry.status.toUpperCase()}. Check your email for more details. - THE VIBE CO.`;
+                if (isRejected && inquiry.rejectionReason) {
+                  waMsg = `Hello ${inquiry.name}, your inquiry for ${inquiry.eventType} was unfortunately declined. Reason: ${inquiry.rejectionReason}. Check your email for more details. - THE VIBE CO.`;
+                }
+                await sendWhatsAppMessage(inquiry.phone, waMsg);
+              }
+            }
+
+            // Create internal notification for user
+            const Notification = require('../models/Notification');
+            if (inquiry.user) {
+              await Notification.create({
+                recipient: inquiry.user,
+                type: 'status_update',
+                title: 'Inquiry Status Update',
+                message: `The status of your inquiry for ${inquiry.eventType} has been updated to ${inquiry.status.toUpperCase()}.`
+              });
+            }
+
+            // Notify Admin about status change
+            const admins = await User.find({ role: 'admin' });
+            for (const adminUser of admins) {
+              await Notification.create({
+                recipient: adminUser._id,
+                type: 'status_update',
+                title: 'Booking Status Changed',
+                message: `Inquiry for ${inquiry.eventType} from ${inquiry.name} was ${inquiry.status.toUpperCase()} by the service provider.`
+              });
+            }
+
+            // Send admin email about status change
+            const adminEmail = process.env.ADMIN_EMAIL || 'admin@thevibeco.com';
+            await sendEmail({
+              email: adminEmail,
+              subject: `Booking ${inquiry.status.toUpperCase()}: ${inquiry.eventType} - ${inquiry.name}`,
+              message: `Inquiry from ${inquiry.name} for ${inquiry.eventType} has been ${inquiry.status} by the service provider.`,
+              html: `
+                <div style="font-family: Arial, sans-serif; padding: 20px; border: 1px solid #C9A84C; border-radius: 10px;">
+                  <h2 style="color: #C9A84C;">Booking Status Update</h2>
+                  <p>A service provider has updated a booking status:</p>
+                  <p><strong>Client:</strong> ${inquiry.name}</p>
+                  <p><strong>Event:</strong> ${inquiry.eventType}</p>
+                  <p><strong>New Status:</strong> <span style="color: ${statusColor}; font-weight: bold; text-transform: uppercase;">${inquiry.status}</span></p>
+                  ${inquiry.rejectionReason ? `<p><strong>Rejection Reason:</strong> ${inquiry.rejectionReason}</p>` : ''}
+                  <p style="font-size: 0.8rem; color: #777; margin-top: 20px;">THE VIBE CO. Admin Notification</p>
+                </div>
+              `
+            });
+
+            // Send admin WhatsApp
+            const adminPhone = process.env.ADMIN_PHONE || '';
+            if (adminPhone) {
+              await sendWhatsAppMessage(
+                adminPhone,
+                `📋 Booking Update: ${inquiry.name}'s ${inquiry.eventType} inquiry has been ${inquiry.status.toUpperCase()} by the provider.${inquiry.rejectionReason ? ' Reason: ' + inquiry.rejectionReason : ''} - THE VIBE CO.`
+              );
+            }
+
+            // Notify the Provider who made the action
+            if (inquiry.service) {
+              const providerUser = await User.findOne({ serviceId: inquiry.service, role: 'provider' });
+              if (providerUser) {
+                await Notification.create({
+                  recipient: providerUser._id,
+                  type: 'status_update',
+                  title: `You ${inquiry.status} a booking`,
+                  message: `You have ${inquiry.status} the ${inquiry.eventType} booking from ${inquiry.name}.`
+                });
+
+                // WhatsApp confirmation to provider
+                if (providerUser.phone) {
+                  await sendWhatsAppMessage(
+                    providerUser.phone,
+                    `✅ Confirmation: You have ${inquiry.status.toUpperCase()} the ${inquiry.eventType} booking from ${inquiry.name}. - THE VIBE CO.`
+                  );
+                }
               }
             }
           }
-        } catch (notifError) {
-          console.error('Notification Error after inquiry update:', notifError);
+        } catch (bgError) {
+          console.error('❌ Background Notification Error in updateInquiryStatus:', bgError);
         }
-      }
-
-      res.json(updatedInquiry);
+      })();
     } else {
       res.status(404).json({ message: 'Inquiry not found' });
     }
