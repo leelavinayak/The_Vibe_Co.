@@ -5,6 +5,9 @@ const {
   getUserDetails,
   updateUser, 
   createUser,
+  deleteUser,
+  createAdminInit,
+  createAdminVerify,
   getAllInquiries, 
   updateInquiryStatus, 
   getAllReviews, 
@@ -19,8 +22,11 @@ router.use(admin);
 
 router.get('/users', getAllUsers);
 router.post('/users', createUser);
+router.post('/users/create-admin-init', createAdminInit);
+router.post('/users/create-admin', createAdminVerify);
 router.get('/users/:id', getUserDetails);
 router.put('/users/:id', updateUser);
+router.delete('/users/:id', deleteUser);
 
 router.get('/inquiries', getAllInquiries);
 router.put('/inquiries/:id', updateInquiryStatus);

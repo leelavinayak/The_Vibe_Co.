@@ -21,41 +21,7 @@ const registerUser = async (req, res) => {
 
     const user = await User.create({ name, email, password, phone, state, gender, language, country });
 
-    // Send notifications
-    try {
-      const sendEmail = require('../services/emailService');
-      const sendWhatsAppMessage = require('../services/whatsappService');
-      const { welcomeTemplate } = require('../utils/premiumTemplates');
-
-      // Send Welcome Email (Non-blocking background)
-      sendEmail({
-        email: user.email,
-        subject: 'Welcome to THE VIBE CO. ⚜️',
-        message: `Hello ${user.name}, thank you for registering with THE VIBE CO.`,
-        html: welcomeTemplate(user.name)
-      }).catch(err => console.error('Welcome Email background error:', err));
-
-      // Send Welcome WhatsApp/SMS (Non-blocking background)
-      if (user.phone) {
-        sendWhatsAppMessage(
-          user.phone,
-          `Hello ${user.name}, welcome to THE VIBE CO.! Your account has been successfully created. Explore our premium event services now.`
-        ).catch(err => console.error('Welcome WhatsApp background error:', err));
-      }
-
-      // Create internal notification
-      const Notification = require('../models/Notification');
-      await Notification.create({
-        recipient: user._id,
-        type: 'welcome',
-        title: 'Welcome to THE VIBE CO.',
-        message: 'Your account has been successfully created. Explore our premium event services now!'
-      });
-    } catch (notifError) {
-      console.error('Notification Error after registration:', notifError);
-      // We don't fail the registration if notifications fail
-    }
-
+    // Send response immediately — don't block user registration on notifications
     res.status(201).json({
       _id: user._id,
       name: user.name,
@@ -69,6 +35,68 @@ const registerUser = async (req, res) => {
       avatar: user.avatar,
       token: generateToken(user._id)
     });
+
+    // Run all notifications in the background AFTER response is sent
+    (async () => {
+      try {
+        const sendEmail = require('../services/emailService');
+        const sendWhatsAppMessage = require('../services/whatsappService');
+        const { welcomeTemplate, adminRegistrationAlert } = require('../utils/premiumTemplates');
+        const Notification = require('../models/Notification');
+
+        console.log(`\n📧 [Registration] Sending welcome notifications to ${user.name} (${user.email})...`);
+
+        // 1. Send Welcome Email to User
+        const emailResult = await sendEmail({
+          email: user.email,
+          subject: 'Welcome to THE VIBE CO. ⚜️',
+          message: `Hello ${user.name}, thank you for registering with THE VIBE CO.`,
+          html: welcomeTemplate(user.name)
+        });
+        console.log(`📧 [Registration] Welcome email to ${user.email}: ${emailResult ? '✅ Sent' : '❌ Failed'}`);
+
+        // 2. Send Welcome WhatsApp to User
+        if (user.phone) {
+          const waResult = await sendWhatsAppMessage(
+            user.phone,
+            `*THE VIBE CO.* ⚜️\n\nHello *${user.name}*,\n\nWelcome! 🎉 Your account has been successfully created.\n\nExplore our premium event services and start planning your next event.\n\n🔗 Login: ${process.env.FRONTEND_URL || 'http://localhost:3000'}/login\n\nThank you for choosing THE VIBE CO.! 🥂`
+          );
+          console.log(`📱 [Registration] Welcome WhatsApp to ${user.phone}: ${waResult ? '✅ Sent' : '❌ Failed'}`);
+        }
+
+        // 3. Create internal notification for the user
+        await Notification.create({
+          recipient: user._id,
+          type: 'welcome',
+          title: 'Welcome to THE VIBE CO.',
+          message: 'Your account has been successfully created. Explore our premium event services now!'
+        });
+
+        // 4. Notify Admin about new registration
+        const adminEmail = process.env.ADMIN_EMAIL;
+        if (adminEmail) {
+          await sendEmail({
+            email: adminEmail,
+            subject: `New User Registration: ${user.name} ⚜️`,
+            message: `New user registered: ${user.name} (${user.email})`,
+            html: adminRegistrationAlert(user)
+          });
+        }
+
+        // 5. Notify Admin via WhatsApp about new registration
+        const adminPhone = process.env.ADMIN_PHONE;
+        if (adminPhone) {
+          await sendWhatsAppMessage(
+            adminPhone,
+            `⚜️ NEW USER REGISTERED\n\nName: ${user.name}\nEmail: ${user.email}\nPhone: ${user.phone || 'N/A'}\nState: ${user.state || 'N/A'}\n\nCheck the admin dashboard for details. - THE VIBE CO.`
+          );
+        }
+
+        console.log(`✅ [Registration] All welcome notifications completed for ${user.name}\n`);
+      } catch (bgError) {
+        console.error('❌ [Registration] Background notification error:', bgError.message);
+      }
+    })();
   } catch (error) {
     console.error('Registration Error:', error);
     res.status(500).json({ message: error.message || 'Server Error during registration' });
@@ -160,6 +188,7 @@ const loginUser = async (req, res) => {
         message: `You signed in on ${deviceType} at ${timeStr} on ${dateStr}. If this wasn't you, please change your password immediately.`,
         link: '/profile'
       });
+
     } catch (notifError) {
       console.error('Login notification error:', notifError.message);
     }

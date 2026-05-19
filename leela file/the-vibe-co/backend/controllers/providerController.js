@@ -3,75 +3,83 @@ const Service = require('../models/Service');
 const User = require('../models/User');
 const sendEmail = require('../services/emailService');
 const sendWhatsAppMessage = require('../services/whatsappService');
+const { providerWelcomeTemplate, providerUpgradeTemplate, adminProviderApplicationAlert } = require('../utils/premiumTemplates');
 
-// @desc    Submit a service provider application
-// @route   POST /api/providers/apply
 const applyAsProvider = async (req, res) => {
   try {
     const application = await ProviderApplication.create(req.body);
 
-    // Notify Admin via Email
-    try {
-      await sendEmail({
-        email: process.env.ADMIN_EMAIL || 'admin@thevibeco.com',
-        subject: `New Service Provider Application: ${application.businessName} ⚜️`,
-        html: `
-          <div style="font-family: 'Helvetica Neue', Helvetica, Arial, sans-serif; max-width: 600px; margin: 0 auto; background-color: #0a0a0a; color: #d4d4e6; padding: 40px; border: 1px solid rgba(201,168,76,0.3); border-radius: 12px;">
-            <h1 style="color: #C9A84C; text-align: center;">New Partner Application</h1>
-            <p><strong>Business:</strong> ${application.businessName}</p>
-            <p><strong>Contact:</strong> ${application.contactPerson}</p>
-            <p><strong>Service:</strong> ${application.serviceType}</p>
-            <p><strong>Location:</strong> ${application.city}, ${application.state}</p>
-            <p><strong>Phone:</strong> ${application.phone}</p>
-            <p><strong>Description:</strong> ${application.description}</p>
-            <div style="text-align: center; margin-top: 30px;">
-              <a href="${process.env.FRONTEND_URL}/admin/providers" style="background: #C9A84C; color: #000; padding: 12px 24px; text-decoration: none; border-radius: 8px; font-weight: bold;">Review Application</a>
-            </div>
-          </div>
-        `,
-        message: `New provider application from ${application.businessName}`
-      });
-    } catch (err) {
-      console.error('Email notification failed:', err);
-    }
-
-    // Notify Admin via WhatsApp
-    try {
-      const adminPhone = process.env.ADMIN_PHONE;
-      if (adminPhone) {
-        await sendWhatsAppMessage(
-          adminPhone,
-          `⚜️ NEW PARTNER APPLICATION\n\nBusiness: ${application.businessName}\nContact: ${application.contactPerson}\nService: ${application.serviceType}\nCity: ${application.city}\n\nPlease check the admin dashboard to review.`
-        );
-      }
-    } catch (err) {
-      console.error('WhatsApp notification failed:', err);
-    }
-
-    // Confirmation to Applicant
-    try {
-      await sendEmail({
-        email: application.email,
-        subject: 'Application Received - THE VIBE CO. ⚜️',
-        html: `
-          <div style="font-family: 'Helvetica Neue', Helvetica, Arial, sans-serif; max-width: 600px; margin: 0 auto; background-color: #0a0a0a; color: #d4d4e6; padding: 40px; border: 1px solid rgba(201,168,76,0.3); border-radius: 12px; text-align: center;">
-            <h1 style="color: #C9A84C;">Application Received</h1>
-            <p>Hello ${application.contactPerson},</p>
-            <p>Thank you for your interest in joining <strong>THE VIBE CO.</strong> elite partner network.</p>
-            <p>Our team will review your application for <strong>${application.businessName}</strong> and contact you shortly regarding the next steps.</p>
-            <p style="margin-top: 30px; font-size: 0.8rem; color: #7a7a99;">Best Regards,<br/>The Vibe Co. Selection Committee</p>
-          </div>
-        `,
-        message: `Hi ${application.contactPerson}, your application for THE VIBE CO. has been received.`
-      });
-    } catch (err) {
-      console.error('Applicant confirmation email failed:', err);
-    }
-
+    // Send response immediately
     res.status(201).json({
       success: true,
       message: 'Your application has been submitted successfully. Our team will contact you soon.'
     });
+
+    // Run all notifications in the background AFTER response is sent
+    (async () => {
+      try {
+        console.log(`\n📋 [Provider Application] Sending notifications for ${application.businessName}...`);
+
+        // 1. Notify Admin via Email
+        const emailResult1 = await sendEmail({
+          email: process.env.ADMIN_EMAIL || 'admin@thevibeco.com',
+          subject: `New Service Provider Application: ${application.businessName} ⚜️`,
+          html: adminProviderApplicationAlert(application),
+          message: `New provider application from ${application.businessName}`
+        });
+        console.log(`📧 [Provider Application] Admin email: ${emailResult1 ? '✅ Sent' : '❌ Failed'}`);
+
+        // 2. Notify Admin via WhatsApp
+        const adminPhone = process.env.ADMIN_PHONE;
+        if (adminPhone) {
+          const waResult1 = await sendWhatsAppMessage(
+            adminPhone,
+            `⚜️ NEW PROVIDER APPLICATION\n\nBusiness: ${application.businessName}\nContact: ${application.contactPerson}\nService: ${application.serviceType?.replace(/_/g, ' ')}\nStarting Price: ₹${application.startingPrice}\nCity: ${application.city}\n\nPlease check the admin dashboard to review.`
+          );
+          console.log(`📱 [Provider Application] Admin WhatsApp: ${waResult1 ? '✅ Sent' : '❌ Failed'}`);
+        }
+
+        // 3. Confirmation Email to Applicant
+        const emailResult2 = await sendEmail({
+          email: application.email,
+          subject: 'Application Received - THE VIBE CO. ⚜️',
+          html: `
+            <div style="font-family: 'Helvetica Neue', Helvetica, Arial, sans-serif; max-width: 600px; margin: 0 auto; background-color: #050505; color: #d4d4e6; padding: 45px; border: 1px solid rgba(201,168,76,0.25); border-radius: 20px; text-align: center;">
+              <h1 style="color: #C9A84C; font-size: 28px; letter-spacing: 5px; margin-bottom: 5px;">THE VIBE CO.</h1>
+              <p style="color: #8c8caf; font-size: 9px; letter-spacing: 4px; text-transform: uppercase; margin-bottom: 30px;">Premium Event Services</p>
+              <div style="border-top: 1px solid rgba(201,168,76,0.15); padding-top: 30px;">
+                <span style="font-size: 40px;">📋</span>
+                <h2 style="color: #fff; font-size: 22px; margin: 20px 0 15px;">Application Received!</h2>
+                <p style="color: #a3a3c2; font-size: 14.5px; line-height: 1.8;">Hello <strong>${application.contactPerson}</strong>,</p>
+                <p style="color: #a3a3c2; font-size: 14.5px; line-height: 1.8;">Thank you for applying to join <strong>THE VIBE CO.</strong> as a service provider.</p>
+                <p style="color: #a3a3c2; font-size: 14.5px; line-height: 1.8;">We have received your application for <strong>${application.businessName}</strong> (${application.serviceType?.replace(/_/g, ' ')}) and our team will review it shortly.</p>
+                <div style="background: rgba(201,168,76,0.05); border: 1px solid rgba(201,168,76,0.2); padding: 20px; border-radius: 12px; margin: 25px 0; text-align: left;">
+                  <p style="margin: 5px 0; color: #a3a3c2; font-size: 13px;">📋 <strong>Status:</strong> Under Review</p>
+                  <p style="margin: 5px 0; color: #a3a3c2; font-size: 13px;">⏱️ <strong>Expected Response:</strong> Within 48 hours</p>
+                </div>
+                <p style="color: #7a7a99; font-size: 13px; margin-top: 25px;">We'll notify you via email and WhatsApp once your application is processed.</p>
+                <p style="color: #555577; font-size: 12px; margin-top: 30px;">Best Regards,<br/>THE VIBE CO. Team</p>
+              </div>
+            </div>
+          `,
+          message: `Hi ${application.contactPerson}, your application for THE VIBE CO. has been received.`
+        });
+        console.log(`📧 [Provider Application] Applicant confirmation email to ${application.email}: ${emailResult2 ? '✅ Sent' : '❌ Failed'}`);
+
+        // 4. Confirmation WhatsApp to Applicant
+        if (application.phone) {
+          const waResult2 = await sendWhatsAppMessage(
+            application.phone,
+            `*THE VIBE CO.* ⚜️\n\nHello *${application.contactPerson}*,\n\nThank you for applying to join THE VIBE CO. as a service provider!\n\n📋 Your application for *${application.businessName}* (${application.serviceType?.replace(/_/g, ' ')}) has been received.\n\n⏱️ Our team will review it and get back to you within 48 hours.\n\nBest Regards,\nTHE VIBE CO. Team`
+          );
+          console.log(`📱 [Provider Application] Applicant WhatsApp to ${application.phone}: ${waResult2 ? '✅ Sent' : '❌ Failed'}`);
+        }
+
+        console.log(`✅ [Provider Application] All notifications completed for ${application.businessName}\n`);
+      } catch (bgError) {
+        console.error('❌ [Provider Application] Background notification error:', bgError.message);
+      }
+    })();
   } catch (error) {
     res.status(400).json({ success: false, message: error.message });
   }
@@ -103,83 +111,103 @@ const updateApplicationStatus = async (req, res) => {
     application.status = newStatus || application.status;
     await application.save();
 
-    // If application is accepted, create a new Service entry and User account
+    // Send response immediately
+    res.json({ success: true, application });
+
+    // If application is accepted, create service + user and send notifications in background
     if (newStatus === 'accepted' && oldStatus !== 'accepted') {
-      try {
-        // Check if service already exists
-        let service = await Service.findOne({ email: application.email });
-        if (!service) {
-          const allImages = [];
-          if (application.logo) allImages.push(application.logo);
-          if (application.images && application.images.length > 0) {
-            allImages.push(...application.images);
+      (async () => {
+        try {
+          console.log(`\n⚜️ [Provider Acceptance] Processing acceptance for ${application.businessName}...`);
+
+          // Check if service already exists
+          let service = await Service.findOne({ email: application.email });
+          if (!service) {
+            const allImages = [];
+            if (application.logo) allImages.push(application.logo);
+            if (application.images && application.images.length > 0) {
+              allImages.push(...application.images);
+            }
+
+            service = await Service.create({
+              name: application.businessName,
+              type: application.serviceType,
+              state: application.state,
+              city: application.city,
+              description: application.description,
+              priceStartsFrom: `₹${application.startingPrice || 'Contact for Quote'}`,
+              email: application.email,
+              phone: application.phone,
+              instagram: application.instagram || '',
+              rating: 5,
+              features: ['Newly Joined', 'Verified Partner'],
+              images: allImages
+            });
+            console.log(`✅ [Provider Acceptance] Created service listing for ${application.businessName}`);
           }
 
-          service = await Service.create({
-            name: application.businessName,
-            type: application.serviceType,
-            state: application.state,
-            city: application.city,
-            description: application.description,
-            priceStartsFrom: 'Contact for Quote',
-            email: application.email,
-            phone: application.phone,
-            instagram: application.instagram || '',
-            rating: 5,
-            features: ['Newly Joined', 'Verified Partner'],
-            images: allImages
-          });
-          console.log(`✅ Automatically created service listing for ${application.businessName}`);
-        }
+          // Create User account for the provider
+          const existingUser = await User.findOne({ email: application.email });
+          if (!existingUser) {
+            const tempPassword = req.body.password || Math.random().toString(36).slice(-8);
+            const newUser = await User.create({
+              name: application.contactPerson,
+              email: application.email,
+              password: tempPassword,
+              role: 'provider',
+              serviceId: service._id,
+              phone: application.phone
+            });
+            console.log(`✅ [Provider Acceptance] Created provider user for ${application.businessName}`);
 
-        // Create User account for the provider
-        const existingUser = await User.findOne({ email: application.email });
-        if (!existingUser) {
-          const tempPassword = req.body.password || Math.random().toString(36).slice(-8); // Use admin-provided password or random
-          const newUser = await User.create({
-            name: application.contactPerson,
-            email: application.email,
-            password: tempPassword,
-            role: 'provider',
-            serviceId: service._id,
-            phone: application.phone
-          });
+            // Send credentials email
+            const emailResult = await sendEmail({
+              email: application.email,
+              subject: 'Account Accepted - THE VIBE CO. Partner Network ⚜️',
+              html: providerWelcomeTemplate(application.contactPerson, application.businessName, application.email, tempPassword),
+              message: `Your application has been accepted by the Admin. Use password: ${tempPassword} to login.`
+            });
+            console.log(`📧 [Provider Acceptance] Credentials email to ${application.email}: ${emailResult ? '✅ Sent' : '❌ Failed'}`);
 
-          // Send credentials email
-          await sendEmail({
-            email: application.email,
-            subject: 'Account Accepted - THE VIBE CO. Partner Network ⚜️',
-            html: `
-              <div style="font-family: 'Helvetica Neue', Helvetica, Arial, sans-serif; max-width: 600px; margin: 0 auto; background-color: #0a0a0a; color: #d4d4e6; padding: 40px; border: 1px solid rgba(201,168,76,0.3); border-radius: 12px; text-align: center;">
-                <h1 style="color: #C9A84C;">Application Accepted</h1>
-                <p>Hello ${application.contactPerson},</p>
-                <p>We are pleased to inform you that <strong>your application has been accepted by the Admin</strong>. You can now start providing your services on our platform.</p>
-                <div style="background: rgba(255,255,255,0.05); padding: 20px; border-radius: 8px; margin: 30px 0; text-align: left;">
-                  <p style="margin-top: 0;"><strong>Your Login Password:</strong></p>
-                  <p>Email: ${application.email}</p>
-                  <p>Password: <span style="color: #C9A84C; font-family: monospace; font-size: 1.2rem;">${tempPassword}</span></p>
-                </div>
-                <p>Please use the password above to login and start managing your services.</p>
-                <div style="margin-top: 30px;">
-                  <a href="${process.env.FRONTEND_URL}/login" style="background: #C9A84C; color: #000; padding: 12px 24px; text-decoration: none; border-radius: 8px; font-weight: bold;">Login & Start Services</a>
-                </div>
-              </div>
-            `,
-            message: `Your application has been accepted by the Admin. Use password: ${tempPassword} to login.`
-          });
-          console.log(`✅ Automatically created provider user for ${application.businessName}`);
-        } else {
-          // Update existing user to provider role if they exist
-          existingUser.role = 'provider';
-          existingUser.serviceId = service._id;
-          await existingUser.save();
+            // Send credentials via WhatsApp
+            if (application.phone) {
+              const waResult = await sendWhatsAppMessage(
+                application.phone,
+                `*THE VIBE CO.* ⚜️\n\nHello *${application.contactPerson}*,\n\nCongratulations! 🥂 Your application for *${application.businessName}* has been *ACCEPTED*! You are now an elite partner on THE VIBE CO.\n\n*Your Login Credentials:*\n📧 Email: ${application.email}\n🔑 Password: ${tempPassword}\n\n🔗 Login here: ${process.env.FRONTEND_URL || 'http://localhost:3000'}/login\n\nPlease change your password after your first login.\n\nBest Regards,\nTHE VIBE CO.`
+              );
+              console.log(`📱 [Provider Acceptance] Credentials WhatsApp to ${application.phone}: ${waResult ? '✅ Sent' : '❌ Failed'}`);
+            }
+          } else {
+            // Update existing user to provider role
+            existingUser.role = 'provider';
+            existingUser.serviceId = service._id;
+            await existingUser.save();
+            console.log(`✅ [Provider Acceptance] Upgraded existing user ${existingUser.email} to provider role`);
+
+            // Send acceptance email & WhatsApp to existing user
+            const emailResult = await sendEmail({
+              email: application.email,
+              subject: 'Application Accepted - THE VIBE CO. Partner Network ⚜️',
+              html: providerUpgradeTemplate(application.contactPerson, application.businessName),
+              message: `Your application has been accepted by the Admin. Your existing account has been upgraded to partner role.`
+            });
+            console.log(`📧 [Provider Acceptance] Upgrade email to ${application.email}: ${emailResult ? '✅ Sent' : '❌ Failed'}`);
+
+            if (application.phone) {
+              const waResult = await sendWhatsAppMessage(
+                application.phone,
+                `*THE VIBE CO.* ⚜️\n\nHello *${application.contactPerson}*,\n\nCongratulations! 🥂 Your application for *${application.businessName}* has been *ACCEPTED*!\n\nSince you already have an account, your role has been upgraded to Partner/Provider.\n\n🔗 Login: ${process.env.FRONTEND_URL || 'http://localhost:3000'}/login\n\nBest Regards,\nTHE VIBE CO.`
+              );
+              console.log(`📱 [Provider Acceptance] Upgrade WhatsApp to ${application.phone}: ${waResult ? '✅ Sent' : '❌ Failed'}`);
+            }
+          }
+
+          console.log(`✅ [Provider Acceptance] All processing completed for ${application.businessName}\n`);
+        } catch (bgError) {
+          console.error('❌ [Provider Acceptance] Background processing error:', bgError.message);
         }
-      } catch (svcErr) {
-        console.error('Failed to auto-create service/user:', svcErr);
-      }
+      })();
     }
-
-    res.json({ success: true, application });
   } catch (error) {
     res.status(500).json({ success: false, message: error.message });
   }

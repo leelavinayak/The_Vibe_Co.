@@ -12,6 +12,7 @@ const JoinProviderPage = () => {
     serviceType: 'catering',
     city: '',
     state: '',
+    startingPrice: '',
     description: '',
     instagram: '',
     logo: '',
@@ -240,6 +241,11 @@ const JoinProviderPage = () => {
                   <input type="text" name="city" value={formData.city} onChange={handleChange} className="form-input" placeholder="Mumbai" required />
                   <input type="text" name="state" value={formData.state} onChange={handleChange} className="form-input" placeholder="Maharashtra" required />
                 </div>
+              </div>
+
+              <div className="form-group">
+                <label className="form-label">Starting Price (₹)</label>
+                <input type="number" name="startingPrice" value={formData.startingPrice} onChange={handleChange} className="form-input" placeholder="Starting Price (e.g. 15000)" required />
               </div>
 
               <div className="form-group">

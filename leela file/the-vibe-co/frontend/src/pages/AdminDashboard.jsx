@@ -388,6 +388,7 @@ const AdminDashboard = () => {
   const [memberLimit, setMemberLimit] = useState(50);
   const [selectedMember, setSelectedMember] = useState(null);
   const [isMemberModalOpen, setIsMemberModalOpen] = useState(false);
+  const [deleteModal, setDeleteModal] = useState({ show: false, userId: null, userName: '' });
 
   const [isDesktop, setIsDesktop] = useState(window.innerWidth >= 1024);
 
@@ -556,13 +557,58 @@ const AdminDashboard = () => {
     }
   };
 
-  const handleAddUser = async (e) => {
-    e.preventDefault();
+  const confirmDeleteUser = (user) => {
+    setDeleteModal({ show: true, userId: user._id, userName: user.name });
+  };
+
+  const executeDeleteUser = async () => {
     try {
-      await axios.post('/api/admin/users', newUserForm, {
+      await axios.delete(`/api/admin/users/${deleteModal.userId}`, {
         headers: { Authorization: `Bearer ${user.token}` }
       });
+      fetchAdminData();
+      showToast('User deleted successfully', 'success');
+    } catch (error) {
+      console.error('Delete User Error:', error);
+      showToast(`Failed to delete user: ${error.response?.data?.message || error.message}`, 'error');
+    } finally {
+      setDeleteModal({ show: false, userId: null, userName: '' });
+    }
+  };
+
+  const [adminOtpMode, setAdminOtpMode] = useState(false);
+  const [adminOtp, setAdminOtp] = useState('');
+
+  const handleAddUser = async (e) => {
+    e.preventDefault();
+    if (newUserForm.role === 'admin' && !adminOtpMode) {
+      try {
+        await axios.post('/api/admin/users/create-admin-init', {}, {
+          headers: { Authorization: `Bearer ${user.token}` }
+        });
+        setAdminOtpMode(true);
+        showToast('OTP sent to configured admin email', 'success');
+        return;
+      } catch (error) {
+         console.error('Init Admin Creation Error:', error);
+         showToast(`Failed to initiate: ${error.response?.data?.message || error.message}`, 'error');
+         return;
+      }
+    }
+
+    try {
+      if (newUserForm.role === 'admin' && adminOtpMode) {
+         await axios.post('/api/admin/users/create-admin', { ...newUserForm, otp: adminOtp }, {
+            headers: { Authorization: `Bearer ${user.token}` }
+         });
+      } else {
+         await axios.post('/api/admin/users', newUserForm, {
+            headers: { Authorization: `Bearer ${user.token}` }
+         });
+      }
       setIsAddUserModalOpen(false);
+      setAdminOtpMode(false);
+      setAdminOtp('');
       setNewUserForm({ name: '', email: '', phone: '', role: 'user', state: '', gender: '', country: 'India', language: 'English', password: '' });
       fetchAdminData();
       showToast('User created successfully', 'success');
@@ -1220,6 +1266,7 @@ const AdminDashboard = () => {
                         <td style={{ padding: '20px 24px' }}>
                           <div style={{ color: '#fff', textTransform: 'capitalize', fontWeight: 500 }}>{app.serviceType.replace(/_/g, ' ')}</div>
                           <div style={{ fontSize: '0.85rem', color: '#7a7a99', marginTop: '4px' }}>{app.city}, {app.state}</div>
+                          <div style={{ fontSize: '0.85rem', color: '#C9A84C', marginTop: '4px', fontWeight: 'bold' }}>Starting Price: ₹{app.startingPrice || 'N/A'}</div>
                           {app.images && app.images.length > 0 && (
                             <div style={{ display: 'flex', gap: '6px', marginTop: '10px' }}>
                               {app.images.slice(0, 3).map((img, i) => (
@@ -1404,13 +1451,23 @@ const AdminDashboard = () => {
                           </span>
                         </td>
                         <td style={{ padding: '20px 24px', borderRadius: '0 20px 20px 0', textAlign: 'right' }}>
-                          <button 
-                            className="btn btn-outline" 
-                            style={{ padding: '8px 16px', borderRadius: '10px', fontSize: '0.8rem' }}
-                            onClick={(e) => { e.stopPropagation(); handleUserClick(u); }}
-                          >
-                            Manage
-                          </button>
+                          <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'flex-end', gap: '10px' }}>
+                            <button 
+                              className="btn btn-outline" 
+                              style={{ padding: '8px 16px', borderRadius: '10px', fontSize: '0.8rem' }}
+                              onClick={(e) => { e.stopPropagation(); handleUserClick(u); }}
+                            >
+                              Manage
+                            </button>
+                            <button
+                              onClick={(e) => { e.stopPropagation(); confirmDeleteUser(u); }}
+                              style={{ background: 'rgba(255,68,68,0.1)', border: 'none', color: '#ff4444', padding: '8px', borderRadius: '10px', cursor: 'pointer', transition: '0.2s' }}
+                              onMouseEnter={(e) => { e.currentTarget.style.background = 'rgba(255, 68, 68, 0.2)'; }}
+                              onMouseLeave={(e) => { e.currentTarget.style.background = 'rgba(255, 68, 68, 0.1)'; }}
+                            >
+                              <HiTrash size={18} />
+                            </button>
+                          </div>
                         </td>
                       </motion.tr>
                     ))}
@@ -2263,37 +2320,29 @@ const AdminDashboard = () => {
                             <div key={inq._id} style={{ padding: '20px', background: 'rgba(255,255,255,0.03)', borderRadius: '20px', border: '1px solid rgba(255,255,255,0.05)' }}>
                               <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: '12px' }}>
                                 <div style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
-                                  <input
-                                    style={{ background: 'none', border: 'none', borderBottom: '1px solid transparent', color: '#C9A84C', fontWeight: 600, fontSize: '0.95rem', padding: '2px 0', outline: 'none', width: '150px' }}
-                                    value={inq.eventType}
-                                    onChange={(e) => {
-                                      const newVal = e.target.value;
-                                      setUserInquiries(prev => prev.map(item => item._id === inq._id ? { ...item, eventType: newVal } : item));
-                                    }}
-                                    onBlur={async () => {
-                                      await axios.put(`/api/admin/inquiries/${inq._id}`, { eventType: inq.eventType });
-                                    }}
-                                  />
-                                  <span style={{ fontSize: '0.7rem', padding: '3px 8px', borderRadius: '6px', background: inq.status === 'accepted' ? 'rgba(129, 199, 132, 0.1)' : 'rgba(255,255,255,0.05)', color: inq.status === 'accepted' ? '#81C784' : '#7a7a99', fontWeight: 800 }}>{inq.status}</span>
+                                  <span style={{ color: '#C9A84C', fontWeight: 600, fontSize: '0.95rem', textTransform: 'capitalize' }}>
+                                    {inq.eventType}
+                                  </span>
+                                  <span style={{ fontSize: '0.7rem', padding: '3px 8px', borderRadius: '6px', background: inq.status === 'accepted' ? 'rgba(129, 199, 132, 0.1)' : 'rgba(255,255,255,0.05)', color: inq.status === 'accepted' ? '#81C784' : '#7a7a99', fontWeight: 800, textTransform: 'uppercase' }}>{inq.status}</span>
                                 </div>
                                 <span style={{ fontSize: '0.75rem', opacity: 0.4 }}>{new Date(inq.createdAt).toLocaleDateString()}</span>
                               </div>
-                              <textarea
-                                style={{ background: 'rgba(255,255,255,0.02)', border: '1px solid rgba(255,255,255,0.05)', borderRadius: '8px', color: '#aaa', fontSize: '0.9rem', width: '100%', padding: '10px', outline: 'none', resize: 'none', height: '80px', marginBottom: '15px' }}
-                                value={inq.message || ''}
-                                onChange={(e) => {
-                                  const newVal = e.target.value;
-                                  setUserInquiries(prev => prev.map(item => item._id === inq._id ? { ...item, message: newVal } : item));
-                                }}
-                                onBlur={async () => {
-                                  await axios.put(`/api/admin/inquiries/${inq._id}`, { message: inq.message });
-                                }}
-                              />
-                              <div style={{ display: 'flex', gap: '10px', justifyContent: 'flex-end' }}>
+                              {inq.service && (
+                                <div style={{ fontSize: '0.8rem', color: '#d4d4e6', marginBottom: '10px', display: 'flex', alignItems: 'center', gap: '6px' }}>
+                                  <HiBadgeCheck style={{ color: '#C9A84C' }} /> Requested Provider: {inq.service.name}
+                                </div>
+                              )}
+                              <p style={{ background: 'rgba(255,255,255,0.02)', border: '1px solid rgba(255,255,255,0.05)', borderRadius: '8px', color: '#aaa', fontSize: '0.85rem', padding: '12px', margin: '0 0 15px 0', lineHeight: 1.5 }}>
+                                {inq.message || 'No message provided.'}
+                              </p>
+                              <div style={{ display: 'flex', gap: '10px', justifyContent: 'space-between', alignItems: 'center' }}>
+                                <div style={{ fontSize: '0.75rem', color: '#555577' }}>
+                                  Budget: <strong style={{ color: '#fff' }}>{inq.budget || 'N/A'}</strong>
+                                </div>
                                 <select
                                   value={inq.status}
                                   onChange={(e) => handleUpdateInquiry(inq._id, e.target.value)}
-                                  style={{ background: '#111', border: '1px solid #222', color: '#fff', fontSize: '0.8rem', padding: '5px 10px', borderRadius: '8px', cursor: 'pointer' }}
+                                  style={{ background: '#111', border: '1px solid #C9A84C', color: '#fff', fontSize: '0.8rem', padding: '6px 12px', borderRadius: '8px', cursor: 'pointer', outline: 'none' }}
                                 >
                                   <option value="new">New</option>
                                   <option value="accepted">Accepted</option>
@@ -2609,52 +2658,62 @@ const AdminDashboard = () => {
               </div>
 
               <form onSubmit={handleAddUser} style={{ padding: '30px', display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '20px', maxHeight: '70vh', overflowY: 'auto' }}>
-                <div className="form-group" style={{ gridColumn: 'span 2' }}>
-                  <label className="form-label">Full Name</label>
-                  <input className="form-input" value={newUserForm.name} onChange={e => setNewUserForm({ ...newUserForm, name: e.target.value })} placeholder="Enter full name" required />
-                </div>
-                <div className="form-group">
-                  <label className="form-label">Email Address</label>
-                  <input type="email" className="form-input" value={newUserForm.email} onChange={e => setNewUserForm({ ...newUserForm, email: e.target.value })} placeholder="email@example.com" required />
-                </div>
-                <div className="form-group">
-                  <label className="form-label">Phone Number</label>
-                  <input type="tel" className="form-input" value={newUserForm.phone} onChange={e => setNewUserForm({ ...newUserForm, phone: e.target.value })} placeholder="+91 9876543210" required />
-                </div>
-                <div className="form-group">
-                  <label className="form-label">Role</label>
-                  <select className="form-input" value={newUserForm.role} onChange={e => setNewUserForm({ ...newUserForm, role: e.target.value })}>
-                    <option value="user">User</option>
-                    <option value="provider">Provider</option>
-                    <option value="organizer">Organizer</option>
-                    <option value="admin">Admin</option>
-                  </select>
-                </div>
-                <div className="form-group">
-                  <label className="form-label">Gender</label>
-                  <select className="form-input" value={newUserForm.gender} onChange={e => setNewUserForm({ ...newUserForm, gender: e.target.value })}>
-                    <option value="">Select Gender</option>
-                    <option value="male">Male</option>
-                    <option value="female">Female</option>
-                    <option value="other">Other</option>
-                  </select>
-                </div>
-                <div className="form-group">
-                  <label className="form-label">State</label>
-                  <input className="form-input" value={newUserForm.state} onChange={e => setNewUserForm({ ...newUserForm, state: e.target.value })} placeholder="e.g. Maharashtra" />
-                </div>
-                <div className="form-group">
-                  <label className="form-label">Country</label>
-                  <input className="form-input" value={newUserForm.country} onChange={e => setNewUserForm({ ...newUserForm, country: e.target.value })} placeholder="e.g. India" />
-                </div>
-                <div className="form-group" style={{ gridColumn: 'span 2' }}>
-                  <label className="form-label">Temporary Password</label>
-                  <input type="password" className="form-input" value={newUserForm.password} onChange={e => setNewUserForm({ ...newUserForm, password: e.target.value })} placeholder="Min 6 characters" minLength={6} required />
-                </div>
+                {!adminOtpMode ? (
+                  <>
+                    <div className="form-group" style={{ gridColumn: 'span 2' }}>
+                      <label className="form-label">Full Name</label>
+                      <input className="form-input" value={newUserForm.name} onChange={e => setNewUserForm({ ...newUserForm, name: e.target.value })} placeholder="Enter full name" required />
+                    </div>
+                    <div className="form-group">
+                      <label className="form-label">Email Address</label>
+                      <input type="email" className="form-input" value={newUserForm.email} onChange={e => setNewUserForm({ ...newUserForm, email: e.target.value })} placeholder="email@example.com" required />
+                    </div>
+                    <div className="form-group">
+                      <label className="form-label">Phone Number</label>
+                      <input type="tel" className="form-input" value={newUserForm.phone} onChange={e => setNewUserForm({ ...newUserForm, phone: e.target.value })} placeholder="+91 9876543210" required />
+                    </div>
+                    <div className="form-group">
+                      <label className="form-label">Role</label>
+                      <select className="form-input" value={newUserForm.role} onChange={e => setNewUserForm({ ...newUserForm, role: e.target.value })}>
+                        <option value="user">User</option>
+                        <option value="provider">Provider</option>
+                        <option value="organizer">Organizer</option>
+                        <option value="admin">Admin</option>
+                      </select>
+                    </div>
+                    <div className="form-group">
+                      <label className="form-label">Gender</label>
+                      <select className="form-input" value={newUserForm.gender} onChange={e => setNewUserForm({ ...newUserForm, gender: e.target.value })}>
+                        <option value="">Select Gender</option>
+                        <option value="male">Male</option>
+                        <option value="female">Female</option>
+                        <option value="other">Other</option>
+                      </select>
+                    </div>
+                    <div className="form-group">
+                      <label className="form-label">State</label>
+                      <input className="form-input" value={newUserForm.state} onChange={e => setNewUserForm({ ...newUserForm, state: e.target.value })} placeholder="e.g. Maharashtra" />
+                    </div>
+                    <div className="form-group">
+                      <label className="form-label">Country</label>
+                      <input className="form-input" value={newUserForm.country} onChange={e => setNewUserForm({ ...newUserForm, country: e.target.value })} placeholder="e.g. India" />
+                    </div>
+                    <div className="form-group" style={{ gridColumn: 'span 2' }}>
+                      <label className="form-label">Temporary Password</label>
+                      <input type="password" className="form-input" value={newUserForm.password} onChange={e => setNewUserForm({ ...newUserForm, password: e.target.value })} placeholder="Min 6 characters" minLength={6} required />
+                    </div>
+                  </>
+                ) : (
+                  <div className="form-group" style={{ gridColumn: 'span 2' }}>
+                    <label className="form-label">Admin Authorization OTP</label>
+                    <p style={{ fontSize: '0.85rem', color: '#7a7a99', marginBottom: '10px' }}>An OTP has been sent to the system administrator's email. Enter it below to authorize this new admin creation.</p>
+                    <input type="text" className="form-input" value={adminOtp} onChange={e => setAdminOtp(e.target.value)} placeholder="Enter 6-digit OTP" required />
+                  </div>
+                )}
 
                 <div style={{ gridColumn: 'span 2', marginTop: '10px' }}>
                   <button type="submit" className="btn btn-primary" style={{ width: '100%', padding: '16px' }}>
-                    Create User Account
+                    {adminOtpMode ? 'Verify & Create Admin' : newUserForm.role === 'admin' ? 'Initiate Admin Creation' : 'Create User Account'}
                   </button>
                 </div>
               </form>
@@ -2730,6 +2789,52 @@ const AdminDashboard = () => {
           </motion.div>
         )}
       </AnimatePresence>
+
+      {/* Delete Confirmation Modal */}
+      <AnimatePresence>
+        {deleteModal.show && (
+          <motion.div
+            initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }}
+            style={{ position: 'fixed', inset: 0, background: 'rgba(0,0,0,0.9)', backdropFilter: 'blur(20px)', zIndex: 9999, display: 'flex', alignItems: 'center', justifyContent: 'center', padding: '20px' }}
+            onClick={() => setDeleteModal({ show: false, userId: null, userName: '' })}
+          >
+            <motion.div
+              initial={{ scale: 0.9, y: 30 }} animate={{ scale: 1, y: 0 }} exit={{ scale: 0.9, y: 30 }}
+              style={{ background: '#111', width: '100%', maxWidth: '400px', borderRadius: '32px', border: '1px solid rgba(255,68,68,0.3)', overflow: 'hidden', textAlign: 'center' }}
+              onClick={e => e.stopPropagation()}
+            >
+              <div style={{ padding: '40px 30px' }}>
+                <div style={{ width: '80px', height: '80px', borderRadius: '50%', background: 'rgba(255,68,68,0.1)', color: '#ff4444', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: '2.5rem', margin: '0 auto 20px' }}>
+                  <HiOutlineShieldCheck />
+                </div>
+                <h3 style={{ fontFamily: "'Playfair Display', serif", fontSize: '1.8rem', margin: '0 0 15px', color: '#fff' }}>Confirm Deletion</h3>
+                <p style={{ color: '#7a7a99', fontSize: '1rem', lineHeight: 1.6, margin: '0 0 30px' }}>
+                  Are you sure you want to permanently delete <strong>{deleteModal.userName}</strong>? This action will remove all associated profile data and cannot be undone.
+                </p>
+                <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '15px' }}>
+                  <button 
+                    onClick={() => setDeleteModal({ show: false, userId: null, userName: '' })}
+                    style={{ background: 'rgba(255,255,255,0.05)', color: '#fff', border: 'none', padding: '14px', borderRadius: '12px', fontWeight: 600, cursor: 'pointer', transition: '0.2s' }}
+                    onMouseEnter={e => e.currentTarget.style.background = 'rgba(255,255,255,0.1)'}
+                    onMouseLeave={e => e.currentTarget.style.background = 'rgba(255,255,255,0.05)'}
+                  >
+                    Cancel
+                  </button>
+                  <button 
+                    onClick={executeDeleteUser}
+                    style={{ background: '#ff4444', color: '#fff', border: 'none', padding: '14px', borderRadius: '12px', fontWeight: 600, cursor: 'pointer', transition: '0.2s' }}
+                    onMouseEnter={e => e.currentTarget.style.background = '#e60000'}
+                    onMouseLeave={e => e.currentTarget.style.background = '#ff4444'}
+                  >
+                    Delete User
+                  </button>
+                </div>
+              </div>
+            </motion.div>
+          </motion.div>
+        )}
+      </AnimatePresence>
+
     </div>
   );
 };

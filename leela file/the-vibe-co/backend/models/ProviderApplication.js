@@ -49,6 +49,10 @@ const providerApplicationSchema = new mongoose.Schema({
   images: [{
     type: String
   }],
+  startingPrice: {
+    type: Number,
+    required: [true, 'Starting price is required']
+  },
   status: {
     type: String,
     enum: ['pending', 'reviewed', 'accepted', 'rejected'],

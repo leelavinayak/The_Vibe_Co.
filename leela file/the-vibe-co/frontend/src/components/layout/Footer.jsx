@@ -184,7 +184,7 @@ const Footer = () => {
             <div style={{ display: 'flex', flexDirection: 'column', gap: '16px' }}>
               <div style={{ display: 'flex', alignItems: 'center', gap: '12px', color: '#7a7a99' }}>
                 <HiMail style={{ color: '#C9A84C', fontSize: '1.1rem' }} />
-                <span style={{ fontSize: '0.9rem' }}>thevibeco.@gmail.com</span>
+                <span style={{ fontSize: '0.9rem' }}>thevibeco2026@gmail.com</span>
               </div>
               <div style={{ display: 'flex', alignItems: 'center', gap: '12px', color: '#7a7a99' }}>
                 <HiPhone style={{ color: '#C9A84C', fontSize: '1.1rem' }} />

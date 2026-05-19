@@ -39,6 +39,7 @@ app.use('/api/upload', require('./routes/uploadRoutes'));
 app.use('/api/providers', require('./routes/providerRoutes'));
 app.use('/api/provider-mgmt', require('./routes/providerManagementRoutes'));
 app.use('/api/chat', require('./routes/chatRoutes'));
+app.use('/api/test', require('./routes/testRoutes'));
 
 // Health check
 app.get('/api/health', (req, res) => {
@@ -78,10 +79,27 @@ process.on('uncaughtException', (err) => {
 });
 
 // Connect to database and start server
-connectDB().then(() => {
+connectDB().then(async () => {
   const PORT = process.env.PORT || 5002;
-  app.listen(PORT, () => {
+  app.listen(PORT, async () => {
     console.log(`🎉 THE VIBE CO. Server running on port ${PORT} [${process.env.NODE_ENV || 'development'}]`);
+
+    // Verify notification services on startup
+    console.log('\n📋 Verifying notification services...');
+    try {
+      const sendEmail = require('./services/emailService');
+      await sendEmail.verify();
+    } catch (err) {
+      console.error('❌ Email service startup check failed:', err.message);
+    }
+
+    try {
+      const sendWhatsAppMessage = require('./services/whatsappService');
+      await sendWhatsAppMessage.verify();
+    } catch (err) {
+      console.error('❌ WhatsApp service startup check failed:', err.message);
+    }
+    console.log('📋 Service verification complete.\n');
   });
 });
 
