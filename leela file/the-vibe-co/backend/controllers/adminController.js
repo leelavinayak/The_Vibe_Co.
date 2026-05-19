@@ -265,12 +265,12 @@ const updateInquiryStatus = async (req, res) => {
                       <h1 style="color: #C9A84C; font-size: 24px; font-weight: normal; letter-spacing: 2px; margin: 0 0 15px 0; text-transform: uppercase;">Event Completed Successfully</h1>
                       <p style="font-size: 16px; line-height: 1.6; color: #ffffff; font-family: 'Outfit', sans-serif; margin: 0 0 20px 0;">Dear <strong>${inquiry.name}</strong>,</p>
                       <p style="font-size: 14px; line-height: 1.8; color: #a3a3c2; font-family: 'Outfit', sans-serif; margin: 0; text-align: justify;">
-                        We are delighted to confirm that your premium <strong>${inquiry.eventType.toUpperCase()}</strong> orchestration is successfully concluded. It has been an absolute privilege for <strong>THE VIBE CO.</strong> and our elite network partner, <strong>${actualProvider.name}</strong>, to bring your vision to life.
+                        We are delighted to confirm that your premium <strong>${inquiry.eventType.toUpperCase()}</strong> orchestration is successfully concluded. It has been an absolute privilege for <strong>THE VIBE CO.</strong> to bring your vision to life.
                       </p>
                     </div>
 
-                    <div style="background: rgba(255,255,255,0.03); padding: 25px; border-radius: 8px; border: 1px solid rgba(201, 168, 76, 0.15); margin-bottom: 30px; text-align: left; font-family: 'Outfit', sans-serif;">
-                      <h3 style="color: #C9A84C; font-family: 'Playfair Display', serif; font-size: 16px; margin: 0 0 15px 0; letter-spacing: 1px; text-transform: uppercase; border-bottom: 1px solid rgba(201, 168, 76, 0.1); padding-bottom: 5px;">Dossier & Settlement Summary</h3>
+                    <div style="background: rgba(255,255,255,0.03); padding: 25px; border-radius: 8px; border: 1px solid rgba(201, 168, 76, 0.15); margin-bottom: 20px; text-align: left; font-family: 'Outfit', sans-serif;">
+                      <h3 style="color: #C9A84C; font-family: 'Playfair Display', serif; font-size: 16px; margin: 0 0 15px 0; letter-spacing: 1px; text-transform: uppercase; border-bottom: 1px solid rgba(201, 168, 76, 0.1); padding-bottom: 5px;">Settlement Summary</h3>
                       <table style="width: 100%; border-collapse: collapse; font-size: 14px; color: #d4d4e6;">
                         <tr>
                           <td style="padding: 6px 0; color: #7a7a99;">Event Orchestrated</td>
@@ -280,10 +280,6 @@ const updateInquiryStatus = async (req, res) => {
                           <td style="padding: 6px 0; color: #7a7a99;">Execution Date</td>
                           <td style="padding: 6px 0; text-align: right; color: #ffffff;">${inquiry.eventDate ? new Date(inquiry.eventDate).toLocaleDateString('en-US', { month: 'long', day: 'numeric', year: 'numeric' }) : 'TBD'}</td>
                         </tr>
-                        <tr>
-                          <td style="padding: 6px 0; color: #7a7a99;">Service Provider</td>
-                          <td style="padding: 6px 0; text-align: right; color: #C9A84C;">${actualProvider.name}</td>
-                        </tr>
                         <tr style="border-top: 1px solid rgba(201, 168, 76, 0.1); margin-top: 10px;">
                           <td style="padding: 12px 0 6px 0; color: #C9A84C; font-weight: bold; font-size: 15px;">TOTAL COST</td>
                           <td style="padding: 12px 0 6px 0; text-align: right; color: #C9A84C; font-weight: bold; font-size: 16px;">Rs. ${totalAmount.toLocaleString()}</td>
@@ -291,6 +287,24 @@ const updateInquiryStatus = async (req, res) => {
                       </table>
                     </div>
 
+                    <div style="background: rgba(255,255,255,0.03); padding: 25px; border-radius: 8px; border: 1px solid rgba(201, 168, 76, 0.15); margin-bottom: 30px; text-align: left; font-family: 'Outfit', sans-serif;">
+                      <h3 style="color: #C9A84C; font-family: 'Playfair Display', serif; font-size: 16px; margin: 0 0 15px 0; letter-spacing: 1px; text-transform: uppercase; border-bottom: 1px solid rgba(201, 168, 76, 0.1); padding-bottom: 5px;">Service Member Details</h3>
+                      <table style="width: 100%; border-collapse: collapse; font-size: 14px; color: #d4d4e6;">
+                        <tr>
+                          <td style="padding: 6px 0; color: #7a7a99;">Partner Name</td>
+                          <td style="padding: 6px 0; text-align: right; color: #ffffff; font-weight: bold;">${actualProvider.name}</td>
+                        </tr>
+                        <tr>
+                          <td style="padding: 6px 0; color: #7a7a99;">Contact Email</td>
+                          <td style="padding: 6px 0; text-align: right; color: #ffffff;">${actualProvider.email}</td>
+                        </tr>
+                        <tr>
+                          <td style="padding: 6px 0; color: #7a7a99;">Contact Phone</td>
+                          <td style="padding: 6px 0; text-align: right; color: #ffffff;">${actualProvider.phone || 'N/A'}</td>
+                        </tr>
+                      </table>
+                    </div>
+ 
                     <div style="margin: 30px 0;">
                       <p style="font-family: 'Outfit', sans-serif; font-size: 14px; color: #a3a3c2; margin-bottom: 20px;">
                         Attached to this email, you will find your official luxury **Invoice Receipt Dossier** in PDF format containing complete itemized charges and partner details.
@@ -299,7 +313,7 @@ const updateInquiryStatus = async (req, res) => {
                         Review Your Experience
                       </a>
                     </div>
-
+ 
                     <div style="margin-top: 40px; padding-top: 20px; border-top: 1px solid rgba(255,255,255,0.05);">
                       <p style="font-size: 11px; font-family: 'Playfair Display', serif; font-style: italic; color: #C9A84C; letter-spacing: 2px; margin: 0 0 5px 0;">Experience the Extraordinary</p>
                       <p style="font-size: 9px; font-family: 'Outfit', sans-serif; color: #555577; margin: 0; text-transform: uppercase;">THE VIBE CO. Selection Committee & Execu-Team</p>

@@ -58,19 +58,19 @@ const generatePDFBuffer = (contact, providerInfo, isForUser = true) => {
       // 5. Grid Layout - Client & Partner Metadata
       const startY = doc.y;
       
-      // LEFT COLUMN: Recipient / Payer Info
-      doc.fillColor('#C9A84C').font('Helvetica-Bold').fontSize(10).text(isForUser ? 'PREPARED FOR (CLIENT)' : 'CLIENT REPRESENTATIVE', 60, startY);
+      // LEFT COLUMN: Client / User Details (always on the left for consistency)
+      doc.fillColor('#C9A84C').font('Helvetica-Bold').fontSize(10).text('CLIENT DETAILS (USER)', 60, startY);
       doc.moveDown(0.4);
-      doc.fillColor('#1a1a1a').font('Helvetica').fontSize(12).text(isForUser ? contact.name : providerInfo.name);
-      doc.fillColor('#444444').font('Helvetica').fontSize(10).text(`Email: ${isForUser ? contact.email : providerInfo.email}`);
-      doc.text(`Phone: ${isForUser ? (contact.phone || 'N/A') : (providerInfo.phone || 'N/A')}`);
+      doc.fillColor('#1a1a1a').font('Helvetica').fontSize(12).text(contact.name);
+      doc.fillColor('#444444').font('Helvetica').fontSize(10).text(`Email: ${contact.email}`);
+      doc.text(`Phone: ${contact.phone || 'N/A'}`);
 
-      // RIGHT COLUMN: Sender / Provider Info
-      doc.fillColor('#C9A84C').font('Helvetica-Bold').fontSize(10).text(isForUser ? 'SERVICE PROVIDER (PARTNER)' : 'PREPARED FOR (SERVICE MEMBER)', 320, startY);
+      // RIGHT COLUMN: Service Member / Provider Details (always on the right for consistency)
+      doc.fillColor('#C9A84C').font('Helvetica-Bold').fontSize(10).text('SERVICE MEMBER (PROVIDER)', 320, startY);
       doc.moveDown(0.4);
-      doc.fillColor('#1a1a1a').font('Helvetica').fontSize(12).text(isForUser ? providerInfo.name : contact.name, 320);
-      doc.fillColor('#444444').font('Helvetica').fontSize(10).text(`Email: ${isForUser ? providerInfo.email : contact.email}`, 320);
-      doc.text(`Phone: ${isForUser ? (providerInfo.phone || 'N/A') : (contact.phone || 'N/A')}`, 320);
+      doc.fillColor('#1a1a1a').font('Helvetica').fontSize(12).text(providerInfo.name, 320);
+      doc.fillColor('#444444').font('Helvetica').fontSize(10).text(`Email: ${providerInfo.email}`, 320);
+      doc.text(`Phone: ${providerInfo.phone || 'N/A'}`, 320);
 
       doc.moveDown(2);
       

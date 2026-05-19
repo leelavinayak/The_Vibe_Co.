@@ -37,13 +37,34 @@ const AboutPage = () => (
     <section className="section" style={{ background: '#0a0a0a' }}>
       <div className="container" style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(min(100%, 350px), 1fr))', gap: '60px', alignItems: 'center' }}>
         <motion.div initial="hidden" whileInView="visible" viewport={{ once: true }} variants={fadeUp}>
-          <span className="section-subtitle">Since 2018</span>
+          <span className="section-subtitle">Founded in 2026</span>
           <h2 style={{ fontFamily: "'Playfair Display', serif", fontSize: 'clamp(2rem, 3.5vw, 3rem)', color: '#fff', marginBottom: '24px' }}>
             Crafting <span className="text-gradient">Unforgettable</span> Experiences
           </h2>
           <p style={{ color: '#9999b3', lineHeight: 1.9, marginBottom: '20px' }}>
-            THE VIBE CO. was born from a simple belief: every event should be a masterpiece. Founded in 2026, we've grown from a passionate team of dreamers into one of India's most sought-after event management companies.
+            THE VIBE CO. was born from a simple belief: every event should be a masterpiece. Founded in 2026, we've grown from a passionate team of dreamers into one of India's most sought-after premium event management platforms.
           </p>
+          <div style={{ 
+            background: 'linear-gradient(135deg, rgba(201,168,76,0.12) 0%, rgba(10,10,10,0.85) 100%)',
+            border: '1px solid rgba(201,168,76,0.25)',
+            borderRadius: '16px',
+            padding: '20px 24px',
+            marginBottom: '24px',
+            display: 'flex',
+            alignItems: 'center',
+            gap: '16px',
+            boxShadow: '0 4px 20px rgba(0,0,0,0.2)'
+          }}>
+            <div style={{ color: '#C9A84C', flexShrink: 0 }}>
+              <HiSparkles size={30} />
+            </div>
+            <div>
+              <h4 style={{ fontFamily: "'Playfair Display', serif", color: '#fff', fontSize: '1.1rem', marginBottom: '4px' }}>Find Services Nearby You</h4>
+              <p style={{ color: '#9999b3', fontSize: '0.9rem', lineHeight: 1.5, margin: 0 }}>
+                Discover and book premium local vendors, organizers, and top-tier services tailored to match your specific location and event needs.
+              </p>
+            </div>
+          </div>
           <p style={{ color: '#7a7a99', lineHeight: 1.9, marginBottom: '32px' }}>
             Our approach combines creative vision with meticulous execution. We don't just plan events — we design immersive experiences that engage all senses and create memories that last a lifetime. From the initial spark of an idea to the final applause, we're with you every step of the way.
           </p>
@@ -54,8 +75,8 @@ const AboutPage = () => (
             <img src="https://images.unsplash.com/photo-1511578314322-379afb476865?w=600" alt="About THE VIBE CO."
               style={{ width: '100%', borderRadius: '16px', border: '1px solid rgba(201,168,76,0.2)' }} />
             <div style={{ position: 'absolute', bottom: '-20px', right: '-20px', width: '150px', height: '150px', background: 'linear-gradient(135deg, #C9A84C, #FFD700)', borderRadius: '16px', display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', boxShadow: '0 8px 32px rgba(201,168,76,0.3)' }}>
-              <div style={{ fontFamily: "'Playfair Display', serif", fontSize: '2.5rem', fontWeight: 800, color: '#0a0a0a' }}>8+</div>
-              <div style={{ fontSize: '0.7rem', fontWeight: 600, letterSpacing: '2px', textTransform: 'uppercase', color: '#0a0a0a', fontFamily: "'Outfit', sans-serif" }}>Years</div>
+              <div style={{ fontFamily: "'Playfair Display', serif", fontSize: '2.2rem', fontWeight: 800, color: '#0a0a0a' }}>2026</div>
+              <div style={{ fontSize: '0.7rem', fontWeight: 600, letterSpacing: '2px', textTransform: 'uppercase', color: '#0a0a0a', fontFamily: "'Outfit', sans-serif" }}>Founded</div>
             </div>
           </div>
         </motion.div>
