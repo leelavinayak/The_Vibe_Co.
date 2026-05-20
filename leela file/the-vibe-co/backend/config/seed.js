@@ -47,65 +47,7 @@ const seedEvents = [
   }
 ];
 
-const seedServices = [
-  {
-    name: "Vamsi Decorations",
-    type: "decoration",
-    description: "WE ARE READY TO DECORATE YOUR EVENT WITH YOUR EXPECTATIONS",
-    priceStartsFrom: "15000",
-    features: ["Premium Floral Decor", "Themed Backgrounds", "Custom Lighting"],
-    images: ["https://images.unsplash.com/photo-1519167758481-83f550bb49b3?w=800"],
-    rating: 5,
-    state: "Andhra Pradesh",
-    city: "Tirupati",
-    email: "kleelavinayak@gmail.com",
-    phone: "123456789"
-  },
-  {
-    name: "Elite Lens Photography",
-    type: "photography",
-    description: "Capturing your moments with cinematic precision. We specialize in high-end wedding and corporate event photography.",
-    priceStartsFrom: "₹50,000",
-    features: ["4K Video", "Drone Coverage", "Live Streaming", "Premium Albums"],
-    images: ["https://images.unsplash.com/photo-1516035069371-29a1b244cc32?w=800"],
-    rating: 4.9,
-    state: "Maharashtra",
-    city: "Mumbai"
-  },
-  {
-    name: "Royal Flavors Catering",
-    type: "catering",
-    description: "Exquisite multi-cuisine catering for grand celebrations. Our chefs craft personalized menus that delight every palate.",
-    priceStartsFrom: "₹1,500",
-    features: ["Live Stations", "Gourmet Menu", "Mixology", "Waiter Service"],
-    images: ["https://images.unsplash.com/photo-1555244162-803834f70033?w=800"],
-    rating: 4.8,
-    state: "Karnataka",
-    city: "Bangalore"
-  },
-  {
-    name: "Dream Decor Stylists",
-    type: "decoration",
-    description: "Transforming venues into magical spaces. From floral arrangements to lighting design, we create the perfect ambiance.",
-    priceStartsFrom: "₹1,00,000",
-    features: ["Floral Design", "Theme Concept", "Lighting", "Stage Setup"],
-    images: ["https://images.unsplash.com/photo-1511795409834-432f7b1728d2?w=800"],
-    rating: 4.7,
-    state: "Maharashtra",
-    city: "Pune"
-  },
-  {
-    name: "Vibe Global Organizers",
-    type: "total_event_organisation",
-    description: "End-to-end event management. We handle everything from planning to execution, ensuring a flawless experience.",
-    priceStartsFrom: "Custom Pricing",
-    features: ["Venue Selection", "Vendor Management", "Logistics", "Guest Relations"],
-    images: ["https://images.unsplash.com/photo-1511578314322-379afb476865?w=800"],
-    rating: 5.0,
-    state: "Delhi",
-    city: "New Delhi"
-  }
-];
+const seedServices = [];
 
 const performSeed = async () => {
   try {
@@ -114,10 +56,8 @@ const performSeed = async () => {
     await Event.insertMany(seedEvents);
     console.log('✅ Events seeded successfully!');
 
-    // Seed Services
-    await Service.deleteMany({});
-    await Service.insertMany(seedServices);
-    console.log('✅ Services seeded successfully!');
+    // Services are NOT seeded - only real service member additions are shown
+    console.log('ℹ️ Services seeding skipped - only service member added services will be shown.');
 
     // Seed Admin (Fixed ID to prevent session loss on restart)
     const adminEmail = process.env.ADMIN_EMAIL || 'kleelavinayak@gmail.com';
@@ -164,7 +104,7 @@ const seedDB = async () => {
   process.exit(0);
 };
 
-module.exports = { seedEvents, seedServices, seedDB, performSeed };
+module.exports = { seedEvents, seedDB, performSeed };
 
 if (require.main === module) {
   seedDB();

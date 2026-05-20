@@ -59,6 +59,28 @@ const updateUser = async (req, res) => {
       user.language = req.body.language !== undefined ? req.body.language : user.language;
       user.avatar = req.body.avatar !== undefined ? req.body.avatar : user.avatar;
 
+      // Update associated service details if passed
+      if (req.body.serviceDetails && user.serviceId) {
+        const service = await Service.findById(user.serviceId);
+        if (service) {
+          service.name = req.body.serviceDetails.name !== undefined ? req.body.serviceDetails.name : service.name;
+          service.type = req.body.serviceDetails.type !== undefined ? req.body.serviceDetails.type : service.type;
+          service.description = req.body.serviceDetails.description !== undefined ? req.body.serviceDetails.description : service.description;
+          service.priceStartsFrom = req.body.serviceDetails.priceStartsFrom !== undefined ? req.body.serviceDetails.priceStartsFrom : service.priceStartsFrom;
+          service.state = req.body.serviceDetails.state !== undefined ? req.body.serviceDetails.state : service.state;
+          service.city = req.body.serviceDetails.city !== undefined ? req.body.serviceDetails.city : service.city;
+          service.phone = req.body.serviceDetails.phone !== undefined ? req.body.serviceDetails.phone : service.phone;
+          service.email = req.body.serviceDetails.email !== undefined ? req.body.serviceDetails.email : service.email;
+          service.instagram = req.body.serviceDetails.instagram !== undefined ? req.body.serviceDetails.instagram : service.instagram;
+          if (req.body.serviceDetails.features !== undefined) {
+            service.features = Array.isArray(req.body.serviceDetails.features)
+              ? req.body.serviceDetails.features
+              : req.body.serviceDetails.features.split(',').map(f => f.trim()).filter(Boolean);
+          }
+          await service.save();
+        }
+      }
+
       const updatedUser = await user.save();
       const populatedUser = await User.findById(updatedUser._id).populate('serviceId');
       res.json(populatedUser);

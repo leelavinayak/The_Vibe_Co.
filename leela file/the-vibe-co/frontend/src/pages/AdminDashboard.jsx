@@ -325,7 +325,10 @@ const AdminDashboard = () => {
     pendingInquiries: 0,
     totalReviews: 0,
     acceptedInquiries: 0,
-    pendingProviderApplications: 0
+    pendingProviderApplications: 0,
+    userCount: 0,
+    providerCount: 0,
+    adminCount: 0
   });
   const [searchTerm, setSearchTerm] = useState('');
   const [limit, setLimit] = useState(50);
@@ -356,7 +359,11 @@ const AdminDashboard = () => {
   const [isUserModalOpen, setIsUserModalOpen] = useState(false);
   const [isEditingUser, setIsEditingUser] = useState(false);
   const [isServiceModalOpen, setIsServiceModalOpen] = useState(false);
-  const [userEditForm, setUserEditForm] = useState({ name: '', email: '', phone: '', role: '', state: '', gender: '', country: '', language: '' });
+  const [userEditForm, setUserEditForm] = useState({ 
+    name: '', email: '', phone: '', role: '', state: '', gender: '', country: '', language: '',
+    serviceName: '', serviceType: 'photography', serviceDescription: '', servicePriceStartsFrom: '',
+    serviceState: '', serviceCity: '', servicePhone: '', serviceEmail: '', serviceInstagram: '', serviceFeatures: ''
+  });
   const [userInquiries, setUserInquiries] = useState([]);
   const [modalLoading, setModalLoading] = useState(false);
   const [selectedInquiry, setSelectedInquiry] = useState(null);
@@ -369,6 +376,7 @@ const AdminDashboard = () => {
   const [passwordModal, setPasswordModal] = useState({ show: false, appId: null, contactPerson: '', status: '' });
   const [newPassword, setNewPassword] = useState('vibe-co-partner');
   const [userSubTab, setUserSubTab] = useState('users');
+  const [userLocationSearch, setUserLocationSearch] = useState('');
 
   const handlePasswordSubmit = async () => {
     try {
@@ -485,7 +493,10 @@ const AdminDashboard = () => {
         pendingInquiries: inquiries.filter(i => i?.status === 'new').length,
         acceptedInquiries: inquiries.filter(i => i?.status === 'accepted').length,
         totalReviews: reviews.length,
-        pendingProviderApplications: providerApps.filter(a => a?.status === 'pending').length
+        pendingProviderApplications: providerApps.filter(a => a?.status === 'pending').length,
+        userCount: users.filter(u => u?.role === 'user').length,
+        providerCount: users.filter(u => u?.role === 'provider').length,
+        adminCount: users.filter(u => u?.role === 'admin').length
       });
     } catch (error) {
       console.error('Error fetching admin data:', error);
@@ -509,7 +520,17 @@ const AdminDashboard = () => {
         state: data.user.state || '',
         gender: data.user.gender || '',
         country: data.user.country || '',
-        language: data.user.language || ''
+        language: data.user.language || '',
+        serviceName: data.user.serviceId?.name || '',
+        serviceType: data.user.serviceId?.type || 'photography',
+        serviceDescription: data.user.serviceId?.description || '',
+        servicePriceStartsFrom: data.user.serviceId?.priceStartsFrom || '',
+        serviceState: data.user.serviceId?.state || '',
+        serviceCity: data.user.serviceId?.city || '',
+        servicePhone: data.user.serviceId?.phone || '',
+        serviceEmail: data.user.serviceId?.email || '',
+        serviceInstagram: data.user.serviceId?.instagram || '',
+        serviceFeatures: data.user.serviceId?.features ? data.user.serviceId.features.join(', ') : ''
       });
     } catch (error) {
       console.error('Error fetching user details:', error);
@@ -544,7 +565,33 @@ const AdminDashboard = () => {
   const handleUpdateUser = async (e) => {
     e.preventDefault();
     try {
-      const { data: updatedUser } = await axios.put(`/api/admin/users/${selectedUser._id}`, userEditForm, {
+      const payload = {
+        name: userEditForm.name,
+        email: userEditForm.email,
+        phone: userEditForm.phone,
+        role: userEditForm.role,
+        state: userEditForm.state,
+        gender: userEditForm.gender,
+        country: userEditForm.country,
+        language: userEditForm.language
+      };
+
+      if (selectedUser?.serviceId) {
+        payload.serviceDetails = {
+          name: userEditForm.serviceName,
+          type: userEditForm.serviceType,
+          description: userEditForm.serviceDescription,
+          priceStartsFrom: userEditForm.servicePriceStartsFrom,
+          state: userEditForm.serviceState,
+          city: userEditForm.serviceCity,
+          phone: userEditForm.servicePhone,
+          email: userEditForm.serviceEmail,
+          instagram: userEditForm.serviceInstagram,
+          features: userEditForm.serviceFeatures
+        };
+      }
+
+      const { data: updatedUser } = await axios.put(`/api/admin/users/${selectedUser._id}`, payload, {
         headers: { Authorization: `Bearer ${user.token}` }
       });
       setSelectedUser(updatedUser);
@@ -764,11 +811,21 @@ const AdminDashboard = () => {
       case 'overview':
         return (
           <motion.div key="overview" initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} exit={{ opacity: 0, y: -20 }}>
-            <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(280px, 1fr))', gap: '30px', marginBottom: '80px' }}>
-              <StatCard label="Total Clients" value={stats.totalUsers} icon={<HiUserGroup />} color="#C9A84C" trend="+8% New" />
+            <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(280px, 1fr))', gap: '30px', marginBottom: '40px' }}>
+              <StatCard label="Total Members" value={stats.totalUsers} icon={<HiUserGroup />} color="#C9A84C" trend="+8% New" />
               <StatCard label="Active Inquiries" value={stats.totalInquiries} icon={<HiClipboardList />} color="#4FC3F7" trend="High Demand" />
               <StatCard label="Accepted Events" value={stats.acceptedInquiries} icon={<HiCheckCircle />} color="#81C784" trend="Confirmed" />
               <StatCard label="Verified Reviews" value={stats.totalReviews} icon={<HiStar />} color="#FFD54F" trend="98% Positive" />
+            </div>
+
+            {/* User Role Breakdown */}
+            <div style={{ marginBottom: '80px' }}>
+              <h3 style={{ fontFamily: "'Playfair Display', serif", fontSize: '1.5rem', color: '#C9A84C', marginBottom: '24px' }}>User Breakdown</h3>
+              <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(250px, 1fr))', gap: '24px' }}>
+                <StatCard label="Users" value={stats.userCount} icon={<HiUsers />} color="#64B5F6" />
+                <StatCard label="Service Members" value={stats.providerCount} icon={<HiBadgeCheck />} color="#BA68C8" />
+                <StatCard label="Admins" value={stats.adminCount} icon={<HiShieldCheck />} color="#EF5350" />
+              </div>
             </div>
 
             <div style={{ display: 'grid', gridTemplateColumns: '1fr', gap: '40px' }}>
@@ -1392,6 +1449,51 @@ const AdminDashboard = () => {
                 ))}
               </div>
 
+              {/* Search & Filter Bar */}
+              <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(250px, 1fr))', gap: '16px', marginBottom: '30px' }}>
+                <div style={{ position: 'relative' }}>
+                  <HiSearch style={{ position: 'absolute', left: '15px', top: '50%', transform: 'translateY(-50%)', color: '#C9A84C' }} />
+                  <input 
+                    type="text" 
+                    placeholder="Search by name, email, phone..." 
+                    value={searchTerm}
+                    onChange={(e) => setSearchTerm(e.target.value)}
+                    style={{ width: '100%', background: 'rgba(255,255,255,0.05)', border: '1px solid rgba(255,255,255,0.1)', padding: '14px 14px 14px 45px', borderRadius: '14px', color: '#fff', outline: 'none', fontSize: '0.9rem' }}
+                  />
+                </div>
+                <div style={{ position: 'relative' }}>
+                  <HiLocationMarker style={{ position: 'absolute', left: '15px', top: '50%', transform: 'translateY(-50%)', color: '#C9A84C' }} />
+                  <input 
+                    type="text" 
+                    placeholder="Search by location (state, city, country)..." 
+                    value={userLocationSearch}
+                    onChange={(e) => setUserLocationSearch(e.target.value)}
+                    style={{ width: '100%', background: 'rgba(255,255,255,0.05)', border: '1px solid rgba(255,255,255,0.1)', padding: '14px 14px 14px 45px', borderRadius: '14px', color: '#fff', outline: 'none', fontSize: '0.9rem' }}
+                  />
+                </div>
+                <button 
+                  onClick={() => {
+                    const exportUsers = currentUsers.slice(0, userLimit);
+                    const csvRows = ["Name,Email,Phone,Role,State,Country,Joined"];
+                    exportUsers.forEach(u => {
+                      csvRows.push(`"${u.name || ''}","${u.email || ''}","${u.phone || ''}","${u.role || ''}","${u.state || ''}","${u.country || ''}","${new Date(u.createdAt).toLocaleDateString()}"`);
+                    });
+                    const csvContent = "data:text/csv;charset=utf-8," + csvRows.join("\n");
+                    const encodedUri = encodeURI(csvContent);
+                    const link = document.createElement("a");
+                    link.setAttribute("href", encodedUri);
+                    link.setAttribute("download", `${userSubTab}_list.csv`);
+                    document.body.appendChild(link);
+                    link.click();
+                    link.remove();
+                  }}
+                  className="btn btn-outline" 
+                  style={{ padding: '14px 25px', borderRadius: '14px', display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '8px', whiteSpace: 'nowrap' }}
+                >
+                  ⬇ Download CSV
+                </button>
+              </div>
+
               <div style={{ overflowX: 'auto' }}>
                 <table style={{ width: '100%', borderCollapse: 'separate', borderSpacing: '0 12px' }}>
                   <thead>
@@ -1637,8 +1739,13 @@ const AdminDashboard = () => {
       u.phone?.includes(searchTerm);
     
     const matchesState = filterState === '' || u.state === filterState;
+
+    const matchesLocation = userLocationSearch === '' || 
+      (u.state || '').toLowerCase().includes(userLocationSearch.toLowerCase()) ||
+      (u.city || '').toLowerCase().includes(userLocationSearch.toLowerCase()) ||
+      (u.country || '').toLowerCase().includes(userLocationSearch.toLowerCase());
     
-    return matchesSearch && matchesState;
+    return matchesSearch && matchesState && matchesLocation;
   });
 
   return (
@@ -2290,6 +2397,74 @@ const AdminDashboard = () => {
                               <input type="text" className="form-input" value={userEditForm.language} onChange={(e) => setUserEditForm({ ...userEditForm, language: e.target.value })} />
                             </div>
                           </div>
+                          {selectedUser?.serviceId && (
+                            <div style={{ marginTop: '20px', borderTop: '1px solid rgba(255,255,255,0.05)', paddingTop: '20px', marginBottom: '20px' }}>
+                              <h5 style={{ margin: '0 0 15px 0', color: '#C9A84C', fontSize: '0.9rem', textTransform: 'uppercase', letterSpacing: '1px', fontWeight: 700 }}>Service Profile Details</h5>
+                              <div style={{ display: 'flex', flexDirection: 'column', gap: '15px' }}>
+                                <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '15px' }}>
+                                  <div className="form-group">
+                                    <label style={{ color: '#555577', fontSize: '0.8rem', marginBottom: '8px', display: 'block' }}>Service Name</label>
+                                    <input type="text" className="form-input" value={userEditForm.serviceName} onChange={(e) => setUserEditForm({ ...userEditForm, serviceName: e.target.value })} required />
+                                  </div>
+                                  <div className="form-group">
+                                    <label style={{ color: '#555577', fontSize: '0.8rem', marginBottom: '8px', display: 'block' }}>Service Category</label>
+                                    <select className="form-input" value={userEditForm.serviceType} onChange={(e) => setUserEditForm({ ...userEditForm, serviceType: e.target.value })}>
+                                      <option value="photography">Photography</option>
+                                      <option value="videography">Videography</option>
+                                      <option value="catering">Catering</option>
+                                      <option value="decoration">Decoration</option>
+                                      <option value="music">Music</option>
+                                      <option value="security">Security</option>
+                                      <option value="total_event_organisation">Total Event Organisation</option>
+                                    </select>
+                                  </div>
+                                </div>
+
+                                <div className="form-group">
+                                  <label style={{ color: '#555577', fontSize: '0.8rem', marginBottom: '8px', display: 'block' }}>Description</label>
+                                  <textarea className="form-input" value={userEditForm.serviceDescription} onChange={(e) => setUserEditForm({ ...userEditForm, serviceDescription: e.target.value })} required style={{ minHeight: '80px', background: 'rgba(255,255,255,0.05)', color: '#fff', border: '1px solid rgba(255,255,255,0.1)', borderRadius: '12px', padding: '12px' }} />
+                                </div>
+
+                                <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '15px' }}>
+                                  <div className="form-group">
+                                    <label style={{ color: '#555577', fontSize: '0.8rem', marginBottom: '8px', display: 'block' }}>Price Starts From</label>
+                                    <input type="text" className="form-input" value={userEditForm.servicePriceStartsFrom} onChange={(e) => setUserEditForm({ ...userEditForm, servicePriceStartsFrom: e.target.value })} required />
+                                  </div>
+                                  <div className="form-group">
+                                    <label style={{ color: '#555577', fontSize: '0.8rem', marginBottom: '8px', display: 'block' }}>Instagram URL</label>
+                                    <input type="text" className="form-input" value={userEditForm.serviceInstagram} onChange={(e) => setUserEditForm({ ...userEditForm, serviceInstagram: e.target.value })} />
+                                  </div>
+                                </div>
+
+                                <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '15px' }}>
+                                  <div className="form-group">
+                                    <label style={{ color: '#555577', fontSize: '0.8rem', marginBottom: '8px', display: 'block' }}>Service City</label>
+                                    <input type="text" className="form-input" value={userEditForm.serviceCity} onChange={(e) => setUserEditForm({ ...userEditForm, serviceCity: e.target.value })} required />
+                                  </div>
+                                  <div className="form-group">
+                                    <label style={{ color: '#555577', fontSize: '0.8rem', marginBottom: '8px', display: 'block' }}>Service State</label>
+                                    <input type="text" className="form-input" value={userEditForm.serviceState} onChange={(e) => setUserEditForm({ ...userEditForm, serviceState: e.target.value })} required />
+                                  </div>
+                                </div>
+
+                                <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '15px' }}>
+                                  <div className="form-group">
+                                    <label style={{ color: '#555577', fontSize: '0.8rem', marginBottom: '8px', display: 'block' }}>Contact Phone</label>
+                                    <input type="tel" className="form-input" value={userEditForm.servicePhone} onChange={(e) => setUserEditForm({ ...userEditForm, servicePhone: e.target.value })} required />
+                                  </div>
+                                  <div className="form-group">
+                                    <label style={{ color: '#555577', fontSize: '0.8rem', marginBottom: '8px', display: 'block' }}>Contact Email</label>
+                                    <input type="email" className="form-input" value={userEditForm.serviceEmail} onChange={(e) => setUserEditForm({ ...userEditForm, serviceEmail: e.target.value })} required />
+                                  </div>
+                                </div>
+
+                                <div className="form-group">
+                                  <label style={{ color: '#555577', fontSize: '0.8rem', marginBottom: '8px', display: 'block' }}>Features (comma separated)</label>
+                                  <input type="text" className="form-input" value={userEditForm.serviceFeatures} onChange={(e) => setUserEditForm({ ...userEditForm, serviceFeatures: e.target.value })} placeholder="e.g. 4K Camera, Cinematic Drone, Professional Lighting" />
+                                </div>
+                              </div>
+                            </div>
+                          )}
                           <button type="submit" className="btn btn-primary" style={{ width: '100%', marginTop: '10px' }}>Save Global Update</button>
                         </form>
                       ) : (
@@ -2297,11 +2472,98 @@ const AdminDashboard = () => {
                           <DetailItem icon={<HiMail />} label="Email Address" value={selectedUser?.email} />
                           <DetailItem icon={<HiPhone />} label="Phone Number" value={selectedUser?.phone || 'Not available'} />
                           {selectedUser?.serviceId && (
-                            <DetailItem 
-                              icon={<HiBadgeCheck style={{ color: '#C9A84C' }} />} 
-                              label="Professional Service" 
-                              value={`${selectedUser.serviceId.type?.replace(/_/g, ' ')} (${selectedUser.serviceId.name})`} 
-                            />
+                            <div style={{
+                              marginTop: '15px',
+                              padding: '24px',
+                              borderRadius: '24px',
+                              background: 'linear-gradient(135deg, rgba(201, 168, 76, 0.05) 0%, rgba(201, 168, 76, 0.01) 100%)',
+                              border: '1px solid rgba(201, 168, 76, 0.15)',
+                              boxShadow: '0 10px 30px rgba(0,0,0,0.2)',
+                            }}>
+                              <div style={{ display: 'flex', alignItems: 'center', gap: '10px', marginBottom: '15px' }}>
+                                <HiBadgeCheck style={{ color: '#C9A84C', fontSize: '1.4rem' }} />
+                                <h5 style={{ margin: 0, color: '#C9A84C', fontSize: '0.95rem', textTransform: 'uppercase', letterSpacing: '2px', fontWeight: 800 }}>Associated Service Profile</h5>
+                              </div>
+                              
+                              <div style={{ display: 'flex', flexDirection: 'column', gap: '20px' }}>
+                                <div style={{ display: 'flex', gap: '16px', alignItems: 'center' }}>
+                                  {selectedUser.serviceId.images && selectedUser.serviceId.images[0] && (
+                                    <img 
+                                      src={getImageUrl(selectedUser.serviceId.images)} 
+                                      alt={selectedUser.serviceId.name} 
+                                      style={{ width: '80px', height: '80px', borderRadius: '16px', objectFit: 'cover', border: '1px solid rgba(255,255,255,0.05)' }} 
+                                    />
+                                  )}
+                                  <div>
+                                    <div style={{ fontWeight: 800, color: '#fff', fontSize: '1.15rem', fontFamily: "'Playfair Display', serif" }}>{selectedUser.serviceId.name}</div>
+                                    <div style={{ fontSize: '0.75rem', color: '#C9A84C', textTransform: 'uppercase', letterSpacing: '1px', marginTop: '4px', fontWeight: 700 }}>
+                                      {selectedUser.serviceId.type?.replace(/_/g, ' ')}
+                                    </div>
+                                    <div style={{ display: 'flex', gap: '12px', marginTop: '8px', fontSize: '0.8rem', color: '#7a7a99', fontWeight: 600 }}>
+                                      <span>⭐ {selectedUser.serviceId.rating || '5.0'} Rating</span>
+                                      <span>•</span>
+                                      <span style={{ color: '#C9A84C' }}>💰 Starts: {selectedUser.serviceId.priceStartsFrom}</span>
+                                    </div>
+                                  </div>
+                                </div>
+
+                                <div style={{ fontSize: '0.85rem', color: '#b3b3cc', lineHeight: 1.6, background: 'rgba(0,0,0,0.3)', padding: '16px', borderRadius: '16px', border: '1px solid rgba(255,255,255,0.02)' }}>
+                                  {selectedUser.serviceId.description}
+                                </div>
+
+                                <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '16px', fontSize: '0.85rem' }}>
+                                  <div>
+                                    <span style={{ color: '#555577', display: 'block', fontSize: '0.7rem', textTransform: 'uppercase', letterSpacing: '1px', marginBottom: '3px' }}>Service Location</span>
+                                    <span style={{ color: '#fff', fontWeight: 600 }}>{selectedUser.serviceId.city}, {selectedUser.serviceId.state}</span>
+                                  </div>
+                                  <div>
+                                    <span style={{ color: '#555577', display: 'block', fontSize: '0.7rem', textTransform: 'uppercase', letterSpacing: '1px', marginBottom: '3px' }}>Contact Email</span>
+                                    <span style={{ color: '#fff', fontWeight: 600 }}>{selectedUser.serviceId.email || 'N/A'}</span>
+                                  </div>
+                                  <div>
+                                    <span style={{ color: '#555577', display: 'block', fontSize: '0.7rem', textTransform: 'uppercase', letterSpacing: '1px', marginBottom: '3px' }}>Contact Phone</span>
+                                    <span style={{ color: '#fff', fontWeight: 600 }}>{selectedUser.serviceId.phone || 'N/A'}</span>
+                                  </div>
+                                  {selectedUser.serviceId.instagram && (
+                                    <div>
+                                      <span style={{ color: '#555577', display: 'block', fontSize: '0.7rem', textTransform: 'uppercase', letterSpacing: '1px', marginBottom: '3px' }}>Instagram</span>
+                                      <a href={selectedUser.serviceId.instagram} target="_blank" rel="noopener noreferrer" style={{ color: '#E1306C', textDecoration: 'none', fontWeight: 700, display: 'flex', alignItems: 'center', gap: '6px', marginTop: '2px' }}>
+                                        <FaInstagram size={14} /> View Demo Profile
+                                      </a>
+                                    </div>
+                                  )}
+                                </div>
+
+                                {selectedUser.serviceId.features && selectedUser.serviceId.features.length > 0 && (
+                                  <div>
+                                    <span style={{ color: '#555577', display: 'block', fontSize: '0.7rem', textTransform: 'uppercase', letterSpacing: '1px', marginBottom: '8px' }}>Features & Specialties</span>
+                                    <div style={{ display: 'flex', flexWrap: 'wrap', gap: '8px' }}>
+                                      {selectedUser.serviceId.features.map((feat, idx) => (
+                                        <span key={idx} style={{ background: 'rgba(201, 168, 76, 0.08)', color: '#C9A84C', border: '1px solid rgba(201, 168, 76, 0.15)', padding: '6px 12px', borderRadius: '10px', fontSize: '0.75rem', fontWeight: 600 }}>
+                                          {feat}
+                                        </span>
+                                      ))}
+                                    </div>
+                                  </div>
+                                )}
+
+                                {selectedUser.serviceId.images && selectedUser.serviceId.images.length > 1 && (
+                                  <div>
+                                    <span style={{ color: '#555577', display: 'block', fontSize: '0.7rem', textTransform: 'uppercase', letterSpacing: '1px', marginBottom: '10px' }}>Portfolio Gallery</span>
+                                    <div style={{ display: 'flex', gap: '10px', overflowX: 'auto', paddingBottom: '8px' }}>
+                                      {selectedUser.serviceId.images.map((img, idx) => (
+                                        <img 
+                                          key={idx} 
+                                          src={getImageUrl([img])} 
+                                          alt="" 
+                                          style={{ width: '65px', height: '65px', borderRadius: '10px', objectFit: 'cover', flexShrink: 0, border: '1px solid rgba(255,255,255,0.05)', transition: '0.3s' }} 
+                                        />
+                                      ))}
+                                    </div>
+                                  </div>
+                                )}
+                              </div>
+                            </div>
                           )}
                           <DetailItem icon={<HiLocationMarker />} label="Location" value={`${selectedUser?.state}${selectedUser?.country ? `, ${selectedUser?.country}` : ''}` || 'Not specified'} />
                           <DetailItem icon={<HiClipboardList />} label="Language" value={selectedUser?.language || 'Not specified'} />

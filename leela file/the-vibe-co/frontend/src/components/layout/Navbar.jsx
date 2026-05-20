@@ -180,7 +180,7 @@ const Navbar = () => {
                   color: '#7a7a99',
                   marginTop: '-1px',
                 }}>
-                  Premium Events
+                  Premium Event Services
                 </div>
               </div>
             </motion.div>

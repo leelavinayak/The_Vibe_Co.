@@ -50,7 +50,7 @@ const ServicesPage = () => {
   const servicesRef = useRef(null);
 
   // States and Cities for filtering (could be fetched from an API)
-  const states = ['Maharashtra', 'Delhi', 'Karnataka', 'Tamil Nadu', 'Goa', 'Rajasthan'];
+  const states = ['Andhra Pradesh','Telangana','Kerala','Maharashtra', 'Delhi', 'Karnataka', 'Tamil Nadu', 'Goa', 'Rajasthan'];
   const cities = {
     'Maharashtra': ['Mumbai', 'Pune', 'Nagpur'],
     'Delhi': ['New Delhi', 'North Delhi'],
@@ -355,8 +355,13 @@ const ServicesPage = () => {
             </div>
           ) : (
             <div style={{ textAlign: 'center', padding: '100px 20px', background: 'rgba(255,255,255,0.02)', borderRadius: '32px', border: '1px dashed rgba(255,255,255,0.1)' }}>
-              <h3 style={{ color: '#7a7a99' }}>No services found in this category or location.</h3>
-              <p style={{ color: '#555' }}>Try adjusting your filters or search terms.</p>
+              <div style={{ fontSize: '3rem', marginBottom: '20px', opacity: 0.3 }}>🔍</div>
+              <h3 style={{ color: '#7a7a99', marginBottom: '10px' }}>No services found</h3>
+              <p style={{ color: '#555', maxWidth: '400px', margin: '0 auto' }}>
+                {search || state || city || activeCategory !== 'all'
+                  ? 'Try adjusting your filters or search terms.'
+                  : 'Services will appear here once service members add them.'}
+              </p>
             </div>
           )}
         </div>

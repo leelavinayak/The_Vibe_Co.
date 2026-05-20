@@ -8,10 +8,10 @@ import { useAuth } from '../context/AuthContext';
 const fadeUp = { hidden: { opacity: 0, y: 40 }, visible: { opacity: 1, y: 0, transition: { duration: 0.6 } } };
 
 const contactInfo = [
-  { icon: <HiMail size={22} />, title: 'Email', detail: 'hello@thevibeco.com', sub: 'We reply within 24 hours' },
-  { icon: <HiPhone size={22} />, title: 'Phone', detail: '+91 98765 43210', sub: 'Mon-Sat, 10am - 7pm' },
-  { icon: <HiLocationMarker size={22} />, title: 'Office', detail: '42 Luxury Lane, Mumbai', sub: 'India 400001' },
-  { icon: <HiClock size={22} />, title: 'Hours', detail: 'Mon - Sat: 10AM - 7PM', sub: 'Sunday by appointment' },
+  { icon: <HiMail size={22} />, title: 'Email', detail: 'thevibeco2026@gmail.com', sub: 'We reply within 24 hours' },
+  { icon: <HiPhone size={22} />, title: 'Phone', detail: '+91 8523086151', sub: 'Mon-Sat, 10am - 7pm' },
+  { icon: <HiLocationMarker size={22} />, title: 'Location', detail: 'Tirupati', sub: 'Andhra Pradesh' },
+  { icon: <HiClock size={22} />, title: 'Hours', detail: 'Mon - Sat: 10AM - 7PM', /*sub: 'Sunday by appointment'*/ },
 ];
 
 const eventTypes = ['wedding', 'corporate', 'birthday', 'concert', 'festival', 'conference', 'private', 'catering', 'photography', 'decoration', 'total_event_organisation', 'other'];
@@ -104,7 +104,7 @@ const ContactPage = () => {
       {/* Contact Info */}
       <section style={{ background: '#111111', borderBottom: '1px solid rgba(201,168,76,0.1)', padding: '60px 0' }}>
         <div className="container">
-          <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(240px, 1fr))', gap: '24px' }}>
+          <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(300px, 1fr))', gap: '24px' }}>
             {contactInfo.map((c, i) => (
               <motion.div key={i} initial="hidden" whileInView="visible" viewport={{ once: true }} variants={{ ...fadeUp, visible: { ...fadeUp.visible, transition: { delay: i * 0.1, duration: 0.5 } } }}
                 style={{ display: 'flex', alignItems: 'flex-start', gap: '16px', padding: '24px', borderRadius: '12px', background: 'rgba(26,26,26,0.5)', border: '1px solid rgba(201,168,76,0.08)' }}>

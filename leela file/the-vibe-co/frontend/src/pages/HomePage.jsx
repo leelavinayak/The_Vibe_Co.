@@ -190,6 +190,15 @@ const HomePage = () => {
           {/* Promotional Slides */}
           {[
             {
+              bg: 'https://images.unsplash.com/photo-1512941937669-90a1b58e7e9c?w=1600',
+              badge: 'Hyperlocal Search',
+              title: 'Elite Services Near Your Place',
+              highlight: 'Services Near You',
+              desc: 'Find top event coordinators and service members close to you. Book directly on your mobile at home.',
+              btn: 'Search Nearby',
+              link: '/services'
+            },
+            {
               bg: 'https://images.unsplash.com/photo-1511795409834-ef04bbd61622?w=1600',
               badge: 'Special Offer',
               title: 'Luxury Wedding Planning',
@@ -205,15 +214,6 @@ const HomePage = () => {
               highlight: 'Corporate Galas',
               desc: 'Impress your clients with a world-class corporate experience managed by our expert coordinators.',
               btn: 'View Service',
-              link: '/services'
-            },
-            {
-              bg: 'https://images.unsplash.com/photo-1512941937669-90a1b58e7e9c?w=1600',
-              badge: 'Hyperlocal Search',
-              title: 'Elite Services Near Your Place',
-              highlight: 'Services Near You',
-              desc: 'Find top event coordinators and service members close to you. Book directly on your mobile at home.',
-              btn: 'Search Nearby',
               link: '/services'
             }
           ].map((ad, idx) => (
