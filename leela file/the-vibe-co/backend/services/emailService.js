@@ -2,10 +2,13 @@ const nodemailer = require('nodemailer');
 
 let transporter = null;
 let transporterVerified = false;
+let lastVerifiedAt = 0;
 
-const getTransporter = () => {
-  if (transporter) return transporter;
+// Re-verify the transporter every 4 minutes to prevent stale connections
+// Gmail closes idle SMTP connections after ~5 minutes
+const VERIFY_INTERVAL_MS = 4 * 60 * 1000;
 
+const createNewTransporter = () => {
   const smtpEmail = process.env.SMTP_EMAIL;
   const smtpPassword = process.env.SMTP_PASSWORD ? process.env.SMTP_PASSWORD.trim() : '';
 
@@ -14,7 +17,7 @@ const getTransporter = () => {
     return null;
   }
 
-  transporter = nodemailer.createTransport({
+  return nodemailer.createTransport({
     host: 'smtp.gmail.com',
     port: 465,
     secure: true,
@@ -25,16 +28,41 @@ const getTransporter = () => {
     tls: {
       rejectUnauthorized: false
     },
-    connectionTimeout: 10000, // 10 second timeout
+    pool: true,              // Use pooled connections for better reliability
+    maxConnections: 3,       // Allow up to 3 simultaneous connections
+    maxMessages: 50,         // Create new connection after 50 messages
+    connectionTimeout: 10000,
     greetingTimeout: 10000,
     socketTimeout: 15000
   });
+};
 
+const getTransporter = () => {
+  if (transporter) return transporter;
+  transporter = createNewTransporter();
   return transporter;
 };
 
+const resetTransporter = () => {
+  if (transporter) {
+    try {
+      transporter.close();
+    } catch (e) {
+      // Ignore close errors
+    }
+  }
+  transporter = null;
+  transporterVerified = false;
+  lastVerifiedAt = 0;
+};
+
 const verifyTransporter = async () => {
-  if (transporterVerified) return true;
+  const now = Date.now();
+
+  // Skip re-verification if recently verified and transporter exists
+  if (transporterVerified && transporter && (now - lastVerifiedAt) < VERIFY_INTERVAL_MS) {
+    return true;
+  }
 
   const t = getTransporter();
   if (!t) return false;
@@ -42,6 +70,7 @@ const verifyTransporter = async () => {
   try {
     await t.verify();
     transporterVerified = true;
+    lastVerifiedAt = now;
     console.log('✅ [Email Service] SMTP connection verified successfully!');
     return true;
   } catch (error) {
@@ -53,8 +82,8 @@ const verifyTransporter = async () => {
     } else if (error.code === 'ESOCKET' || error.code === 'ECONNECTION') {
       console.error('   → Cannot connect to Gmail SMTP server. Check your internet connection.');
     }
-    // Reset transporter so it can be recreated with new credentials
-    transporter = null;
+    // Reset transporter so it can be recreated with new credentials/connection
+    resetTransporter();
     return false;
   }
 };
@@ -63,7 +92,7 @@ const sendEmail = async (options, retryCount = 0) => {
   const maxRetries = 2;
 
   try {
-    // Verify on first use
+    // Verify connection (will re-verify if stale)
     const isVerified = await verifyTransporter();
     if (!isVerified) {
       console.error(`❌ [Email Service] Cannot send email to ${options.email} - SMTP not configured properly.`);
@@ -71,6 +100,11 @@ const sendEmail = async (options, retryCount = 0) => {
     }
 
     const t = getTransporter();
+    if (!t) {
+      console.error(`❌ [Email Service] Cannot send email to ${options.email} - transporter is null.`);
+      return false;
+    }
+
     const smtpEmail = process.env.SMTP_EMAIL;
 
     const message = {
@@ -89,18 +123,32 @@ const sendEmail = async (options, retryCount = 0) => {
   } catch (error) {
     console.error(`❌ [Email Service] Error sending email to ${options.email}: ${error.message}`);
 
+    // Determine if the error is a connection/transient issue
+    const isConnectionError = [
+      'ECONNECTION', 'ESOCKET', 'ETIMEDOUT', 'ECONNRESET',
+      'ECONNREFUSED', 'EPIPE', 'EHOSTUNREACH', 'EAI_AGAIN'
+    ].includes(error.code) ||
+      error.message?.includes('socket') ||
+      error.message?.includes('connect') ||
+      error.message?.includes('closed') ||
+      error.message?.includes('ECONNRESET') ||
+      error.message?.includes('timeout');
+
     if (error.code === 'EAUTH') {
       console.error('   → Gmail App Password is INVALID or EXPIRED. Please regenerate it.');
       console.error('   → Go to: https://myaccount.google.com/apppasswords');
-      // Reset transporter so next attempt will re-verify
-      transporter = null;
-      transporterVerified = false;
     }
 
-    // Retry on transient errors
-    if (retryCount < maxRetries && ['ECONNECTION', 'ESOCKET', 'ETIMEDOUT'].includes(error.code)) {
-      console.log(`🔄 [Email Service] Retrying... (attempt ${retryCount + 2}/${maxRetries + 1})`);
-      await new Promise(resolve => setTimeout(resolve, 2000 * (retryCount + 1)));
+    // Reset transporter on any connection-related error so next attempt creates a fresh one
+    if (isConnectionError || error.code === 'EAUTH') {
+      resetTransporter();
+    }
+
+    // Retry on transient/connection errors
+    if (retryCount < maxRetries && isConnectionError) {
+      const delay = 2000 * (retryCount + 1);
+      console.log(`🔄 [Email Service] Retrying in ${delay}ms... (attempt ${retryCount + 2}/${maxRetries + 1})`);
+      await new Promise(resolve => setTimeout(resolve, delay));
       return sendEmail(options, retryCount + 1);
     }
 
