@@ -29,7 +29,7 @@ const RegisterPage = () => {
     e.preventDefault();
     setError('');
     setLoading(true);
-    
+
     const result = await register(formData);
     if (result.success) {
       navigate('/');
@@ -62,7 +62,7 @@ const RegisterPage = () => {
         ))}
       </div>
 
-      <motion.div 
+      <motion.div
         initial={{ opacity: 0, y: 30 }}
         animate={{ opacity: 1, y: 0 }}
         style={{
@@ -95,10 +95,10 @@ const RegisterPage = () => {
             <label className="form-label" style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
               <HiUser style={{ color: '#C9A84C' }} /> Full Name
             </label>
-            <input 
-              type="text" 
+            <input
+              type="text"
               name="name"
-              className="form-input" 
+              className="form-input"
               placeholder="John Doe"
               value={formData.name}
               onChange={handleChange}
@@ -110,10 +110,10 @@ const RegisterPage = () => {
             <label className="form-label" style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
               <HiMail style={{ color: '#C9A84C' }} /> Email Address
             </label>
-            <input 
-              type="email" 
+            <input
+              type="email"
               name="email"
-              className="form-input" 
+              className="form-input"
               placeholder="john@example.com"
               value={formData.email}
               onChange={handleChange}
@@ -125,10 +125,10 @@ const RegisterPage = () => {
             <label className="form-label" style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
               <HiPhone style={{ color: '#C9A84C' }} /> Phone Number
             </label>
-            <input 
-              type="tel" 
+            <input
+              type="tel"
               name="phone"
-              className="form-input" 
+              className="form-input"
               placeholder="+91 9876543210"
               value={formData.phone}
               onChange={handleChange}
@@ -139,10 +139,10 @@ const RegisterPage = () => {
           <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '15px' }}>
             <div className="form-group">
               <label className="form-label">Country</label>
-              <input 
-                type="text" 
+              <input
+                type="text"
                 name="country"
-                className="form-input" 
+                className="form-input"
                 placeholder="India"
                 value={formData.country}
                 onChange={handleChange}
@@ -151,10 +151,10 @@ const RegisterPage = () => {
             </div>
             <div className="form-group">
               <label className="form-label">State</label>
-              <input 
-                type="text" 
+              <input
+                type="text"
                 name="state"
-                className="form-input" 
+                className="form-input"
                 placeholder="Maharashtra"
                 value={formData.state}
                 onChange={handleChange}
@@ -166,10 +166,10 @@ const RegisterPage = () => {
           <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '15px' }}>
             <div className="form-group">
               <label className="form-label">Language</label>
-              <input 
-                type="text" 
+              <input
+                type="text"
                 name="language"
-                className="form-input" 
+                className="form-input"
                 placeholder="English"
                 value={formData.language}
                 onChange={handleChange}
@@ -178,9 +178,9 @@ const RegisterPage = () => {
             </div>
             <div className="form-group">
               <label className="form-label">Gender</label>
-              <select 
+              <select
                 name="gender"
-                className="form-input" 
+                className="form-input"
                 value={formData.gender}
                 onChange={handleChange}
                 required
@@ -197,10 +197,10 @@ const RegisterPage = () => {
             <label className="form-label" style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
               <HiLockClosed style={{ color: '#C9A84C' }} /> Password
             </label>
-            <input 
-              type="password" 
+            <input
+              type="password"
               name="password"
-              className="form-input" 
+              className="form-input"
               placeholder="Min 6 characters"
               value={formData.password}
               onChange={handleChange}
@@ -209,9 +209,9 @@ const RegisterPage = () => {
             />
           </div>
 
-          <button 
-            type="submit" 
-            className="btn btn-primary" 
+          <button
+            type="submit"
+            className="btn btn-primary"
             style={{ width: '100%', marginBottom: '20px', marginTop: '10px' }}
             disabled={loading}
           >

@@ -79,7 +79,7 @@ const JoinProviderPage = () => {
     e.preventDefault();
     setLoading(true);
     setError('');
-    
+
     try {
       const { data } = await axios.post('/api/providers/apply', formData);
       if (data.success) {
@@ -96,7 +96,7 @@ const JoinProviderPage = () => {
   if (success) {
     return (
       <div style={{ minHeight: '80vh', display: 'flex', alignItems: 'center', justifyContent: 'center', background: '#0a0a0a', padding: '120px 20px' }}>
-        <motion.div 
+        <motion.div
           initial={{ opacity: 0, scale: 0.9 }}
           animate={{ opacity: 1, scale: 1 }}
           style={{ maxWidth: '600px', textAlign: 'center', padding: '60px', background: 'rgba(255,255,255,0.03)', borderRadius: '32px', border: '1px solid #C9A84C' }}
@@ -104,10 +104,10 @@ const JoinProviderPage = () => {
           <HiCheckCircle style={{ fontSize: '5rem', color: '#C9A84C', marginBottom: '24px' }} />
           <h1 style={{ fontFamily: "'Playfair Display', serif", fontSize: '2.5rem', marginBottom: '20px' }}>Application Submitted!</h1>
           <p style={{ color: '#7a7a99', lineHeight: 1.8, fontSize: '1.1rem' }}>
-            Thank you for your interest in joining <strong>THE VIBE CO.</strong> elite partner network. 
+            Thank you for your interest in joining <strong>THE VIBE CO.</strong> elite partner network.
             Our team will review your portfolio and contact you shortly.
           </p>
-          <button 
+          <button
             onClick={() => window.location.href = '/'}
             className="btn btn-primary"
             style={{ marginTop: '40px', padding: '16px 40px' }}
@@ -124,21 +124,21 @@ const JoinProviderPage = () => {
       <div className="container">
         {/* Header */}
         <div style={{ textAlign: 'center', marginBottom: '60px' }}>
-          <motion.span 
+          <motion.span
             initial={{ opacity: 0, y: 10 }}
             animate={{ opacity: 1, y: 0 }}
             style={{ color: '#C9A84C', textTransform: 'uppercase', letterSpacing: '4px', fontSize: '0.9rem', fontWeight: 700, display: 'block', marginBottom: '16px' }}
           >
             Partner Network
           </motion.span>
-          <motion.h1 
+          <motion.h1
             initial={{ opacity: 0, y: 20 }}
             animate={{ opacity: 1, y: 0 }}
             style={{ fontFamily: "'Playfair Display', serif", fontSize: 'clamp(2.5rem, 6vw, 4rem)', marginBottom: '24px' }}
           >
             Join the <span className="text-gradient">Elite</span>
           </motion.h1>
-          <motion.p 
+          <motion.p
             initial={{ opacity: 0, y: 20 }}
             animate={{ opacity: 1, y: 0 }}
             transition={{ delay: 0.1 }}
@@ -150,13 +150,13 @@ const JoinProviderPage = () => {
 
         <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(320px, 1fr))', gap: '60px', alignItems: 'start' }}>
           {/* Instructions Column */}
-          <motion.div 
+          <motion.div
             initial={{ opacity: 0, x: -30 }}
             whileInView={{ opacity: 1, x: 0 }}
             viewport={{ once: true }}
           >
             <h3 style={{ fontSize: '1.8rem', marginBottom: '32px', fontFamily: "'Playfair Display', serif" }}>Application Checklist</h3>
-            
+
             <div style={{ display: 'flex', flexDirection: 'column', gap: '32px' }}>
               {[
                 { title: 'Business Identity', desc: 'Provide your official business name and a high-resolution logo.', icon: <HiOutlineIdentification /> },
@@ -164,8 +164,8 @@ const JoinProviderPage = () => {
                 { title: 'Contact Precision', desc: 'Ensure your phone and email are correct for orchestrator outreach.', icon: <HiOutlinePhone /> }
               ].map((item, idx) => (
                 <div key={idx} style={{ display: 'flex', gap: '20px' }}>
-                  <div style={{ 
-                    width: '56px', height: '56px', borderRadius: '16px', background: 'rgba(201, 168, 76, 0.1)', 
+                  <div style={{
+                    width: '56px', height: '56px', borderRadius: '16px', background: 'rgba(201, 168, 76, 0.1)',
                     display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: '1.8rem', color: '#C9A84C', flexShrink: 0
                   }}>
                     {item.icon}
@@ -183,13 +183,13 @@ const JoinProviderPage = () => {
               <div style={{ marginTop: '48px', padding: '24px', background: 'rgba(255,255,255,0.02)', borderRadius: '24px', border: '1px solid rgba(201,168,76,0.2)', textAlign: 'center' }}>
                 <h4 style={{ fontSize: '0.8rem', textTransform: 'uppercase', color: '#C9A84C', marginBottom: '16px' }}>Business Logo</h4>
                 <img src={formData.logo} alt="Logo Preview" style={{ maxWidth: '120px', height: '120px', objectFit: 'contain', margin: '0 auto', borderRadius: '12px' }} />
-                <button onClick={() => setFormData(p => ({...p, logo: ''}))} style={{ marginTop: '12px', background: 'none', border: 'none', color: '#ff4d4d', cursor: 'pointer', fontSize: '0.8rem' }}>Remove Logo</button>
+                <button onClick={() => setFormData(p => ({ ...p, logo: '' }))} style={{ marginTop: '12px', background: 'none', border: 'none', color: '#ff4d4d', cursor: 'pointer', fontSize: '0.8rem' }}>Remove Logo</button>
               </div>
             )}
           </motion.div>
 
           {/* Form Column */}
-          <motion.div 
+          <motion.div
             initial={{ opacity: 0, x: 30 }}
             whileInView={{ opacity: 1, x: 0 }}
             viewport={{ once: true }}
@@ -204,7 +204,7 @@ const JoinProviderPage = () => {
               {/* Logo Upload */}
               <div className="form-group">
                 <label className="form-label">Business Logo</label>
-                <div style={{ 
+                <div style={{
                   border: '1px dashed rgba(201, 168, 76, 0.3)', padding: '20px', borderRadius: '16px', textAlign: 'center', cursor: 'pointer',
                   background: 'rgba(201, 168, 76, 0.02)', transition: '0.3s'
                 }} onClick={() => document.getElementById('logo-upload').click()}>
@@ -264,7 +264,7 @@ const JoinProviderPage = () => {
                     </div>
                   ))}
                   {formData.images.length < 5 && (
-                    <div 
+                    <div
                       onClick={() => document.getElementById('images-upload').click()}
                       style={{ height: '80px', border: '1px dashed #C9A84C', borderRadius: '8px', display: 'flex', alignItems: 'center', justifyContent: 'center', cursor: 'pointer', background: 'rgba(201,168,76,0.05)' }}
                     >
@@ -283,9 +283,9 @@ const JoinProviderPage = () => {
 
               {error && <p style={{ color: '#ff4d4d', fontSize: '0.9rem' }}>{error}</p>}
 
-              <button 
-                type="submit" 
-                className="btn btn-primary" 
+              <button
+                type="submit"
+                className="btn btn-primary"
                 disabled={loading || uploadingLogo || uploadingImages}
                 style={{ width: '100%', padding: '18px', marginTop: '12px' }}
               >

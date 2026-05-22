@@ -18,7 +18,7 @@ const LoginPage = () => {
     e.preventDefault();
     setError('');
     setLoading(true);
-    
+
     const result = await login(email, password);
     if (result.success) {
       if (result.user.role === 'provider') {
@@ -63,7 +63,7 @@ const LoginPage = () => {
         ))}
       </div>
 
-      <motion.div 
+      <motion.div
         initial={{ opacity: 0, y: 30 }}
         animate={{ opacity: 1, y: 0 }}
         style={{
@@ -96,9 +96,9 @@ const LoginPage = () => {
             <label className="form-label" style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
               <HiMail style={{ color: '#C9A84C' }} /> Email Address
             </label>
-            <input 
-              type="email" 
-              className="form-input" 
+            <input
+              type="email"
+              className="form-input"
               placeholder="name@example.com"
               value={email}
               onChange={(e) => setEmail(e.target.value)}
@@ -110,9 +110,9 @@ const LoginPage = () => {
             <label className="form-label" style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
               <HiLockClosed style={{ color: '#C9A84C' }} /> Password
             </label>
-            <input 
-              type="password" 
-              className="form-input" 
+            <input
+              type="password"
+              className="form-input"
               placeholder="••••••••"
               value={password}
               onChange={(e) => setPassword(e.target.value)}
@@ -124,9 +124,9 @@ const LoginPage = () => {
             <Link to="/forgot-password" style={{ color: '#C9A84C', fontSize: '0.85rem', fontWeight: 500 }}>Forgot Password?</Link>
           </div>
 
-          <button 
-            type="submit" 
-            className="btn btn-primary" 
+          <button
+            type="submit"
+            className="btn btn-primary"
             style={{ width: '100%', marginBottom: '20px' }}
             disabled={loading}
           >
