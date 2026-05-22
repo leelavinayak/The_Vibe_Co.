@@ -131,9 +131,44 @@ const deleteUser = async (req, res) => {
     }
 
     // Check if provider and handle related data
-    if (user.role === 'provider' && user.serviceId) {
-      await Service.findByIdAndDelete(user.serviceId);
-      // We can also clean up the ProviderApplication if we wanted to
+    if (user.role === 'provider') {
+      // 1. Delete by serviceId ref on User model
+      if (user.serviceId) {
+        await Service.findByIdAndDelete(user.serviceId);
+        console.log(`[Delete User] Deleted Service by serviceId: ${user.serviceId}`);
+      }
+      
+      // 2. Fallback: Delete by matching email in Service model
+      if (user.email) {
+        const deletedByEmail = await Service.findOneAndDelete({ email: user.email });
+        if (deletedByEmail) {
+          console.log(`[Delete User] Deleted Service by matching email: ${user.email}`);
+        }
+      }
+
+      // 3. Fallback: Delete by matching phone in Service model
+      if (user.phone) {
+        const deletedByPhone = await Service.findOneAndDelete({ phone: user.phone });
+        if (deletedByPhone) {
+          console.log(`[Delete User] Deleted Service by matching phone: ${user.phone}`);
+        }
+      }
+
+      // 4. Clean up any ProviderApplication associated with this email
+      if (user.email) {
+        try {
+          const ProviderApplication = require('../models/ProviderApplication');
+          await ProviderApplication.deleteMany({ email: user.email });
+          console.log(`[Delete User] Cleaned up ProviderApplications for: ${user.email}`);
+        } catch (appErr) {
+          console.error('[Delete User] Error cleaning up ProviderApplications:', appErr);
+        }
+      }
+    }
+
+    // Extra safety measure: Delete any remaining services matching email
+    if (user.email) {
+      await Service.deleteMany({ email: user.email.toLowerCase().trim() });
     }
 
     await User.findByIdAndDelete(req.params.id);
@@ -142,6 +177,7 @@ const deleteUser = async (req, res) => {
     res.status(500).json({ message: error.message });
   }
 };
+
 
 // @desc    Init create admin (send OTP)
 // @route   POST /api/admin/users/create-admin-init
