@@ -300,7 +300,7 @@ const cancelInquiry = async (req, res) => {
     // Ensure the inquiry belongs to the authenticated user (check user ID and/or matching email)
     const inquiryUserId = inquiry.user ? (inquiry.user._id || inquiry.user) : null;
     const isOwner = (inquiryUserId && inquiryUserId.toString() === req.user._id.toString()) ||
-                    (inquiry.email && req.user.email && inquiry.email.toLowerCase() === req.user.email.toLowerCase());
+      (inquiry.email && req.user.email && inquiry.email.toLowerCase() === req.user.email.toLowerCase());
 
     if (!isOwner) {
       return res.status(401).json({ success: false, message: 'Not authorized to cancel this booking' });

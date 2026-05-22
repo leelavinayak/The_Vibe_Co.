@@ -8,7 +8,7 @@ const sendWhatsAppMessage = require('../services/whatsappService');
 const createReview = async (req, res) => {
   try {
     const { name, email, rating, comment, service } = req.body;
-    
+
     const reviewData = {
       name,
       email,
@@ -20,7 +20,7 @@ const createReview = async (req, res) => {
     if (req.user) {
       reviewData.user = req.user._id;
     }
-    
+
     const review = await Review.create(reviewData);
 
     // Update Service average rating
@@ -135,7 +135,7 @@ const getReviews = async (req, res) => {
     // Calculate stats
     const stats = await Review.aggregate([
       { $match: filter },
-      { 
+      {
         $group: {
           _id: null,
           totalReviews: { $sum: 1 },

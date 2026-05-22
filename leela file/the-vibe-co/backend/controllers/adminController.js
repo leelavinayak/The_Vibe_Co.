@@ -129,13 +129,13 @@ const deleteUser = async (req, res) => {
     if (!user) {
       return res.status(404).json({ message: 'User not found' });
     }
-    
+
     // Check if provider and handle related data
     if (user.role === 'provider' && user.serviceId) {
-       await Service.findByIdAndDelete(user.serviceId);
-       // We can also clean up the ProviderApplication if we wanted to
+      await Service.findByIdAndDelete(user.serviceId);
+      // We can also clean up the ProviderApplication if we wanted to
     }
-    
+
     await User.findByIdAndDelete(req.params.id);
     res.json({ message: 'User and associated service data deleted successfully' });
   } catch (error) {
@@ -146,56 +146,56 @@ const deleteUser = async (req, res) => {
 // @desc    Init create admin (send OTP)
 // @route   POST /api/admin/users/create-admin-init
 const createAdminInit = async (req, res) => {
-   try {
-      const adminEmail = process.env.SMTP_EMAIL || process.env.ADMIN_EMAIL;
-      if (!adminEmail) return res.status(500).json({ message: 'Admin email not configured' });
-      
-      const otp = Math.floor(100000 + Math.random() * 900000).toString();
-      adminOTPs.set(req.user._id.toString(), {
-         otp,
-         expires: Date.now() + 10 * 60 * 1000 // 10 mins
-      });
-      
-      await sendEmail({
-         email: adminEmail,
-         subject: 'Admin Creation Authorization OTP - THE VIBE CO. ⚜️',
-         html: otpTemplate(otp),
-         message: `Your OTP for authorizing new admin creation is: ${otp}`
-      });
-      
-      res.json({ message: `OTP sent successfully to configured system email`, email: adminEmail });
-   } catch (error) {
-      res.status(500).json({ message: error.message });
-   }
+  try {
+    const adminEmail = process.env.SMTP_EMAIL || process.env.ADMIN_EMAIL;
+    if (!adminEmail) return res.status(500).json({ message: 'Admin email not configured' });
+
+    const otp = Math.floor(100000 + Math.random() * 900000).toString();
+    adminOTPs.set(req.user._id.toString(), {
+      otp,
+      expires: Date.now() + 10 * 60 * 1000 // 10 mins
+    });
+
+    await sendEmail({
+      email: adminEmail,
+      subject: 'Admin Creation Authorization OTP - THE VIBE CO. ⚜️',
+      html: otpTemplate(otp),
+      message: `Your OTP for authorizing new admin creation is: ${otp}`
+    });
+
+    res.json({ message: `OTP sent successfully to configured system email`, email: adminEmail });
+  } catch (error) {
+    res.status(500).json({ message: error.message });
+  }
 };
 
 // @desc    Verify OTP and create admin
 // @route   POST /api/admin/users/create-admin
 const createAdminVerify = async (req, res) => {
-   try {
-      const { otp, name, email, password, phone } = req.body;
-      const otpRecord = adminOTPs.get(req.user._id.toString());
-      
-      if (!otpRecord || otpRecord.otp !== otp || Date.now() > otpRecord.expires) {
-         return res.status(400).json({ message: 'Invalid or expired OTP' });
-      }
-      
-      const userExists = await User.findOne({ email });
-      if (userExists) {
-        return res.status(400).json({ message: 'User already exists' });
-      }
-      
-      const user = await User.create({
-         name, email, password, role: 'admin', phone
-      });
-      
-      // clear OTP
-      adminOTPs.delete(req.user._id.toString());
-      
-      res.status(201).json(user);
-   } catch (error) {
-      res.status(500).json({ message: error.message });
-   }
+  try {
+    const { otp, name, email, password, phone } = req.body;
+    const otpRecord = adminOTPs.get(req.user._id.toString());
+
+    if (!otpRecord || otpRecord.otp !== otp || Date.now() > otpRecord.expires) {
+      return res.status(400).json({ message: 'Invalid or expired OTP' });
+    }
+
+    const userExists = await User.findOne({ email });
+    if (userExists) {
+      return res.status(400).json({ message: 'User already exists' });
+    }
+
+    const user = await User.create({
+      name, email, password, role: 'admin', phone
+    });
+
+    // clear OTP
+    adminOTPs.delete(req.user._id.toString());
+
+    res.status(201).json(user);
+  } catch (error) {
+    res.status(500).json({ message: error.message });
+  }
 };
 
 // @desc    Get all inquiries
@@ -349,8 +349,8 @@ const updateInquiryStatus = async (req, res) => {
               fs.writeFileSync(providerFilePath, providerPdfBuffer);
               const providerPdfUrl = `${process.env.FRONTEND_URL || 'http://localhost:3000'}/uploads/${providerFileName}`;
 
-              const totalAmount = (inquiry.billing && inquiry.billing.totalAmount) 
-                ? inquiry.billing.totalAmount 
+              const totalAmount = (inquiry.billing && inquiry.billing.totalAmount)
+                ? inquiry.billing.totalAmount
                 : (inquiry.finalPrice || parseFloat(inquiry.budget.replace(/[^0-9.]/g, '')) || 0);
 
               // 1. Send Ultra-Premium Completion Email to User with PDF attachment
